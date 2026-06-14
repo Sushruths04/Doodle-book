@@ -26,29 +26,6 @@ FONT_GAEGU = os.path.join(FONTS_DIR, "Gaegu-Bold.ttf")
 FONT_CAVEAT = os.path.join(FONTS_DIR, "Caveat.ttf")
 
 
-def _ensure_fonts():
-    """Download fonts from Google Fonts if not present locally."""
-    os.makedirs(FONTS_DIR, exist_ok=True)
-    fonts = {
-        FONT_GAEGU: "https://github.com/google/fonts/raw/main/ofl/gaegu/Gaegu-Bold.ttf",
-        FONT_CAVEAT: "https://github.com/google/fonts/raw/main/ofl/caveat/Caveat%5Bwght%5D.ttf",
-    }
-    import requests
-    for path, url in fonts.items():
-        if not os.path.exists(path):
-            try:
-                r = requests.get(url, timeout=30)
-                r.raise_for_status()
-                with open(path, "wb") as f:
-                    f.write(r.content)
-                logger.info(f"Downloaded font: {os.path.basename(path)}")
-            except Exception as e:
-                logger.warning(f"Could not download font {os.path.basename(path)}: {e}")
-
-
-_ensure_fonts()
-
-
 # ============================================================================
 # STORYBOOK HTML
 # ============================================================================
