@@ -64,10 +64,10 @@ http://127.0.0.1:7880
 
 ### 2. HF Spaces / ZeroGPU-oriented app
 
-Use [app.py](app.py) for the official Hugging Face Gradio Space target.
+Use [app.py](app.py) or [app_zerogpu.py](app_zerogpu.py) depending on the target deployment mode.
 
-- `app.py` is the Space entrypoint declared in the repo metadata.
-- `app_zerogpu.py` is the alternate experimental path kept for local ZeroGPU-focused iteration.
+- `app.py` contains the Gradio app logic and local GPU/ZeroGPU-style orchestration work.
+- `app_zerogpu.py` is the simplified free-hosting path intended for Hugging Face ZeroGPU experiments.
 
 ## Stack used in the hackathon
 
@@ -234,40 +234,26 @@ Target format:
 build-small-hackathon/DoodleBook
 ```
 
-Official target configuration:
+Recommended runtime shape:
 
 - Hugging Face Space SDK: `gradio`
 - Space entrypoint: `app.py`
-- Hardware target: `ZeroGPU`
 - Space frontend and API live on Hugging Face
-- Local or Spaces-managed inference path should be preferred for the official org deployment
+- Story and image generation run in-Space
+- TTS degrades gracefully if the voice stack is unavailable
 
-Important distinction:
-
-- `run_modal.py` is the best local development and debugging path.
-- `app.py` is the correct Hugging Face Space entrypoint.
-- Do not point the Space metadata at `run_modal.py`, because that is the Modal-backed dev runtime rather than the official hosted Gradio runtime.
-
-If you choose the Modal-backed hosted variant later, that becomes a different deployment shape and requires secrets.
-
-Required secrets only for the Modal-backed hosted variant:
+Optional secrets only if you also keep the separate Modal-backed local/dev path:
 
 - `MODAL_TOKEN_ID`
 - `MODAL_TOKEN_SECRET`
 - any Hugging Face token needed by Modal workers for model pulls
 
-Why the Gradio Space + ZeroGPU shape is preferred for the hackathon org:
+Why this deployment shape is preferred:
 
 - keeps the user-facing app as a normal Gradio Space
-- matches the official hackathon org publishing model
-- keeps the demo easy to judge, share, and run from the org page
-- avoids depending on a separate private frontend host
-
-Tradeoff:
-
-- The pure ZeroGPU path is easier to host in the official org.
-- The Modal-backed path currently gives stronger image and TTS quality.
-- The repo keeps both because local quality validation and official hosting have different constraints.
+- avoids overloading ZeroGPU with the entire image pipeline
+- keeps the high-quality FLUX and VoxCPM paths intact
+- makes the frontend easy to judge, share, and demo from the official org
 
 ## Hackathon fit
 

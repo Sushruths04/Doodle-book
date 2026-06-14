@@ -27,6 +27,8 @@ import json
 import time
 import tempfile
 import logging
+import struct
+import re
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -44,6 +46,12 @@ from ui.layout import create_layout
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+_STORY_MODEL = None
+_STORY_TOKENIZER = None
+_IMAGE_PIPE = None
+_IMAGE_PIPE_KIND = None
+_TTS_MODEL = None
+
 COLOR_ART_STYLE = (
     "children's crayon storybook illustration, bold black outlines, "
     "flat bright colors, simple shapes"
@@ -58,6 +66,158 @@ LINE_ART_SUFFIX = (
     "simple clean background shapes, same composition, thick readable outlines, "
     "no filled black areas, no extra sketch marks."
 )
+
+THEME_TEMPLATES = {
+    "brave adventure": [
+        ("{hero} loved exploring new places.", "{hero} standing at the start of a bright adventure trail"),
+        ("One morning, {hero} discovered something glowing nearby.", "{hero} spotting a magical glow in the distance"),
+        ("Taking a deep breath, {hero} bravely went closer.", "{hero} walking forward with courage"),
+        ("There, a new friend needed help.", "{hero} finding a small friend in trouble"),
+        ("{hero} helped with kindness and a clever idea.", "{hero} helping the friend together"),
+        ("Everyone cheered, and {hero} felt proud and brave.", "{hero} celebrating at sunset with the new friend"),
+    ],
+    "making a new friend": [
+        ("{hero} was playing alone in a sunny place.", "{hero} playing under a bright sky"),
+        ("Then {hero} noticed someone shy nearby.", "{hero} seeing a shy new friend nearby"),
+        ("{hero} smiled and said hello.", "{hero} waving with a friendly smile"),
+        ("Soon they were sharing stories and laughs.", "{hero} and the new friend laughing together"),
+        ("They played games all afternoon.", "{hero} and the new friend playing together"),
+        ("By sunset, {hero} had made a wonderful new friend.", "{hero} and the new friend smiling together at sunset"),
+    ],
+}
+
+FEW_SHOT_EXEMPLAR = """
+Write a 6-page children's storybook for age 5 about Luna the cat with theme: brave adventure.
+
+Return ONLY valid JSON:
+{
+  "title": "Luna's Brave Adventure",
+  "character_description": "A small orange tabby cat named Luna with big green eyes, whiskers, and a tiny red scarf",
+  "pages": [
+    {"page": 1, "text": "Luna was a small orange cat who loved to explore.", "scene": "Luna sitting by the window looking outside"},
+    {"page": 2, "text": "One sunny morning, Luna saw something sparkling in the forest.", "scene": "Luna spotting a glow in the trees"},
+    {"page": 3, "text": "Bravely, Luna crept into the forest to investigate.", "scene": "Luna walking cautiously through trees"},
+    {"page": 4, "text": "It was a tiny fairy stuck in a spider web!", "scene": "Luna discovering a fairy in trouble"},
+    {"page": 5, "text": "Luna gently freed the fairy with her paw.", "scene": "Luna carefully helping the fairy"},
+    {"page": 6, "text": "The fairy thanked Luna and they became friends forever.", "scene": "Luna and fairy playing together at sunset"}
+  ]
+}
+"""
+
+
+def build_story_prompt(hero_name: str, theme: str, age: int) -> str:
+    return f"""{FEW_SHOT_EXEMPLAR}
+
+Write a 6-page children's storybook for age {age} about {hero_name} with theme: {theme}.
+
+Return ONLY valid JSON:
+"""
+
+
+def _validate_story_structure(story: dict) -> bool:
+    required_keys = ["title", "character_description", "pages"]
+    if not all(k in story for k in required_keys):
+        return False
+    pages = story.get("pages", [])
+    if not isinstance(pages, list) or len(pages) < 1:
+        return False
+    first_page = pages[0]
+    return all(k in first_page for k in ["page", "text", "scene"])
+
+
+def _repair_json(json_str: str) -> str:
+    json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
+    json_str = re.sub(r'//.*?$', '', json_str, flags=re.MULTILINE)
+    json_str = re.sub(r'/\*[\s\S]*?\*/', '', json_str)
+    json_str = re.sub(r'(?<=")\n(?=")', '\\n', json_str)
+    json_str = re.sub(r'(\s)(\w+)(\s*:)', r'\1"\2"\3', json_str)
+    return json_str
+
+
+def parse_story_json(raw_output: str) -> dict | None:
+    match = re.search(r'\{[\s\S]*\}', raw_output or "")
+    if not match:
+        return None
+    raw_json = match.group(0)
+    for candidate in (raw_json, _repair_json(raw_json)):
+        try:
+            story = json.loads(candidate)
+            if _validate_story_structure(story):
+                return story
+        except Exception:
+            continue
+    return None
+
+
+def _normalize_story(story: dict) -> dict:
+    pages = list(story.get("pages", []))[:6]
+    while len(pages) < 6:
+        pages.append({
+            "page": len(pages) + 1,
+            "text": "And the adventure continued happily.",
+            "scene": "Continuing adventure",
+        })
+    story["pages"] = pages
+    story.setdefault("title", "A Wonderful Adventure")
+    story.setdefault(
+        "character_description",
+        "A friendly children's storybook hero with bright colors and cheerful features",
+    )
+    return story
+
+
+def build_story_locally(hero_name: str, theme: str) -> dict:
+    """Fast, deterministic fallback story that avoids any Modal dependency."""
+    hero = (hero_name or "Little Hero").strip() or "Little Hero"
+    beats = THEME_TEMPLATES.get(theme, THEME_TEMPLATES["brave adventure"])
+    pages = [
+        {"page": i + 1, "text": text.format(hero=hero), "scene": scene.format(hero=hero)}
+        for i, (text, scene) in enumerate(beats)
+    ]
+    return {
+        "title": f"{hero}'s Storybook Adventure",
+        "character_description": (
+            f"{hero}, a friendly children's storybook hero with bright colors, "
+            "bold outlines, and a cheerful expressive face"
+        ),
+        "pages": pages,
+    }
+
+
+def silent_wav_bytes(duration_seconds: int = 2, sample_rate: int = 24000) -> bytes:
+    """Return a short silent WAV so the UI remains stable if TTS is unavailable."""
+    num_samples = sample_rate * duration_seconds
+    data_size = num_samples * 2
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + data_size, b"WAVE",
+        b"fmt ", 16, 1, 1, sample_rate, sample_rate * 2, 2, 16,
+        b"data", data_size,
+    )
+    return header + (b"\x00" * data_size)
+
+
+def _with_heartbeat(blocking_fn, frame_fn, poll=4.0):
+    import threading
+
+    box = {}
+
+    def _run():
+        try:
+            box["val"] = blocking_fn()
+        except BaseException as e:
+            box["err"] = e
+
+    th = threading.Thread(target=_run, daemon=True)
+    th.start()
+    t0 = time.time()
+    while th.is_alive():
+        th.join(timeout=poll)
+        if th.is_alive():
+            yield ("hb", frame_fn(int(time.time() - t0)))
+    if "err" in box:
+        raise box["err"]
+    yield ("done", box["val"])
 
 
 # ============================================================================
@@ -87,36 +247,70 @@ def load_sample_book() -> str:
 
 @spaces.GPU(duration=60)
 def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
-    """Generate story using MiniCPM5-1B on ZeroGPU."""
-    from transformers import AutoTokenizer, AutoModelForCausalLM
-    from modal_workers.modal_story_gen import parse_story_json, build_prompt
-    
-    model_id = STORY_MODEL.hub_id
-    logger.info(f"Loading story model: {model_id}")
-    
-    tok = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id, torch_dtype=torch.float16
-    ).cuda().eval()
-    
-    prompt = build_prompt(hero_name, theme, age)
-    inputs = tok(prompt, return_tensors="pt").cuda()
-    
-    with torch.no_grad():
-        out = model.generate(**inputs, max_new_tokens=800, do_sample=False)
-    
-    response = tok.decode(out[0][inputs.input_ids.shape[1]:], skip_special_tokens=True)
-    
-    story = parse_story_json(response)
-    
-    while len(story.get("pages", [])) < 6:
-        story.setdefault("pages", []).append({
-            "page": len(story.get("pages", [])) + 1,
-            "text": "And the adventure continued happily.",
-            "scene": "Continuing adventure"
-        })
-    
-    return story
+    """Generate a story on ZeroGPU, falling back to a deterministic local story."""
+    global _STORY_MODEL, _STORY_TOKENIZER
+    try:
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+
+        if _STORY_MODEL is None or _STORY_TOKENIZER is None:
+            logger.info(f"Loading story model: {STORY_MODEL.hub_id}")
+            _STORY_TOKENIZER = AutoTokenizer.from_pretrained(STORY_MODEL.hub_id, trust_remote_code=True)
+            _STORY_MODEL = AutoModelForCausalLM.from_pretrained(
+                STORY_MODEL.hub_id,
+                torch_dtype=torch.float16,
+                trust_remote_code=True,
+            ).cuda().eval()
+
+        prompt = build_story_prompt(hero_name, theme, age)
+        inputs = _STORY_TOKENIZER.apply_chat_template(
+            [{"role": "user", "content": prompt}],
+            add_generation_prompt=True,
+            enable_thinking=False,
+            return_dict=True,
+            return_tensors="pt",
+        ).to("cuda")
+        with torch.no_grad():
+            out = _STORY_MODEL.generate(
+                **inputs,
+                max_new_tokens=GENERATION_PARAMS.max_story_tokens,
+                do_sample=False,
+            )
+        response = _STORY_TOKENIZER.decode(
+            out[0][inputs["input_ids"].shape[1]:],
+            skip_special_tokens=True,
+        )
+        parsed = parse_story_json(response)
+        if parsed:
+            return _normalize_story(parsed)
+        logger.warning("Story parser failed; using deterministic local fallback")
+    except Exception as e:
+        logger.warning(f"ZeroGPU story generation failed: {e}")
+    return _normalize_story(build_story_locally(hero_name, theme))
+
+
+def _get_image_pipe(tiny: bool):
+    global _IMAGE_PIPE, _IMAGE_PIPE_KIND
+    desired = "tiny" if tiny else "flux"
+    if _IMAGE_PIPE is not None and _IMAGE_PIPE_KIND == desired:
+        return _IMAGE_PIPE
+
+    if tiny:
+        from diffusers import AutoPipelineForText2Image
+        pipe = AutoPipelineForText2Image.from_pretrained(
+            "stabilityai/sd-turbo",
+            torch_dtype=torch.float16,
+        ).cuda()
+    else:
+        from diffusers import Flux2KleinPipeline
+        pipe = Flux2KleinPipeline.from_pretrained(
+            FLUX_MODEL.hub_id,
+            torch_dtype=torch.bfloat16,
+        ).cuda()
+        pipe.enable_model_cpu_offload()
+
+    _IMAGE_PIPE = pipe
+    _IMAGE_PIPE_KIND = desired
+    return pipe
 
 
 @spaces.GPU(duration=120)
@@ -131,21 +325,11 @@ def generate_images_gpu(
     import io
     from PIL import Image
     
+    pipe = _get_image_pipe(tiny)
     if tiny:
-        from diffusers import AutoPipelineForText2Image
-        pipe = AutoPipelineForText2Image.from_pretrained(
-            "stabilityai/sd-turbo",
-            torch_dtype=torch.float16
-        ).cuda()
         num_steps = 4
         guidance = 0.0
     else:
-        from diffusers import Flux2KleinPipeline
-        pipe = Flux2KleinPipeline.from_pretrained(
-            FLUX_MODEL.hub_id,
-            torch_dtype=torch.bfloat16
-        ).cuda()
-        pipe.enable_model_cpu_offload()
         num_steps = 6
         guidance = 1.0
     
@@ -209,21 +393,11 @@ def generate_coloring_images_gpu(
     import io
     from PIL import Image
 
+    pipe = _get_image_pipe(tiny)
     if tiny:
-        from diffusers import AutoPipelineForText2Image
-        pipe = AutoPipelineForText2Image.from_pretrained(
-            "stabilityai/sd-turbo",
-            torch_dtype=torch.float16
-        ).cuda()
         num_steps = 4
         guidance = 0.0
     else:
-        from diffusers import Flux2KleinPipeline
-        pipe = Flux2KleinPipeline.from_pretrained(
-            FLUX_MODEL.hub_id,
-            torch_dtype=torch.bfloat16
-        ).cuda()
-        pipe.enable_model_cpu_offload()
         num_steps = 6
         guidance = 1.0
 
@@ -277,13 +451,17 @@ def generate_coloring_images_gpu(
 
 @spaces.GPU(duration=30)
 def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
-    """Generate TTS using VoxCPM2 on ZeroGPU with the chosen voice preset."""
+    """Generate TTS when available; otherwise return a tiny silent WAV."""
+    global _TTS_MODEL
     import io
     import numpy as np
 
     try:
         from voxcpm import VoxCPM
-        model = VoxCPM.from_pretrained("openbmb/VoxCPM2", load_denoiser=False)
+        if _TTS_MODEL is None:
+            logger.info(f"Loading TTS model: {TTS_MODEL.hub_id}")
+            _TTS_MODEL = VoxCPM.from_pretrained(TTS_MODEL.hub_id, load_denoiser=False)
+        model = _TTS_MODEL
 
         design = voice_design(voice)
 
@@ -313,9 +491,8 @@ def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
         return buf.getvalue()
     
     except Exception as e:
-        logger.warning(f"VoxCPM2 TTS failed: {e}, using local fallback")
-        from modal_workers.modal_tts import speak_book_local
-        return speak_book_local(text, voice)
+        logger.warning(f"TTS unavailable on Space ({e}); returning silent fallback")
+        return silent_wav_bytes()
 
 
 # ============================================================================
@@ -323,13 +500,13 @@ def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
 # ============================================================================
 
 def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False, voice=DEFAULT_VOICE, make_coloring=False):
-    """Create book with streaming progress + magic loader + optional coloring book."""
-    if not character_name or not character_name.strip():
-        character_name = "Little Hero"
-    if not hero_name or not hero_name.strip():
-        hero_name = character_name
-    
+    """ZeroGPU copy of the local app flow with heartbeats, timing, and coloring support."""
+    t_total = time.perf_counter()
+    character_name = (character_name or "").strip() or "Little Hero"
+    hero_name = (hero_name or "").strip() or character_name
+
     trace_data = {
+        "backend": "zerogpu",
         "hero_name": hero_name,
         "theme": theme,
         "tiny_mode": tiny_mode,
@@ -339,24 +516,30 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
     }
     
-    # Stage 1: Story
-    loader = magic_loader_html("story", hero_name)
+    _no = gr.update(visible=False)
+    _keep = gr.update()
+
     yield (
-        loader,
-        "Generating story with MiniCPM5-1B...",
-        None, None, {}, "", json.dumps(trace_data, indent=2),
-        gr.update(visible=False), gr.update(visible=False),
+        magic_loader_html("story", hero_name),
+        "Writing the story…",
+        None, _keep, {}, "", json.dumps(trace_data, indent=2),
+        _no, _keep,
     )
-    
+
+    t_story = time.perf_counter()
     try:
         story = generate_story_gpu(hero_name, theme)
     except Exception as e:
         logger.error(f"Story generation failed: {e}")
-        yield (f"<div class='page-loading'>Error: {e}</div>", f"Error: {e}",
-               None, None, {}, "", "",
-               gr.update(visible=False), gr.update(visible=False))
+        yield (
+            f"<div class='page-loading'>Error: {e}</div>",
+            f"Error: {e}",
+            None, _keep, {}, "", "",
+            _no, _keep,
+        )
         return
-    
+    trace_data["story_sec"] = round(time.perf_counter() - t_story, 2)
+
     pages = story.get("pages", [])
     char_desc = story.get("character_description", "")
     title = story.get("title", "Untitled Story")
@@ -366,15 +549,13 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
     trace_data["title"] = title
     trace_data["character_description"] = char_desc
     
-    # Stage 2: Images
-    loader = magic_loader_html("images", hero_name)
     yield (
-        loader,
-        f"Story: {title} — Illustrating...",
-        None, None, story, "", json.dumps(trace_data, indent=2),
-        gr.update(visible=False), gr.update(visible=False),
+        magic_loader_html("images", hero_name),
+        f"{title} — illustrating on ZeroGPU…",
+        None, _keep, story, "", json.dumps(trace_data, indent=2),
+        _no, _keep,
     )
-    
+
     doodle_bytes = None
     if doodle_image is not None:
         import io
@@ -383,9 +564,36 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         doodle_bytes = buf.getvalue()
-    
+
+    import threading
+    voice_box = {}
+    full_text = f"{title}. {' '.join(page_texts)}"
+    t_tts = time.perf_counter()
+
+    def _do_voice():
+        try:
+            voice_box["bytes"] = generate_tts_gpu(full_text, voice)
+        except Exception as e:
+            voice_box["err"] = e
+
+    voice_thread = threading.Thread(target=_do_voice, daemon=True)
+    voice_thread.start()
+
+    img_bytes, engine = None, "sketch"
+    t_images = time.perf_counter()
     try:
-        images = generate_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode)
+        for kind, payload in _with_heartbeat(
+            lambda: generate_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode),
+            lambda s: (
+                magic_loader_html("images", hero_name),
+                f"{title} — illustrating… {s}s  (voice recording in parallel)",
+                None, _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
+            ),
+        ):
+            if kind == "hb":
+                yield payload
+            else:
+                images = payload
         import io
         img_bytes = []
         for img in images:
@@ -398,46 +606,66 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         from services.images import generate_placeholder_images
         img_bytes = generate_placeholder_images(char_desc, scenes, doodle_bytes)
         engine = "sketch"
-    
+    trace_data["images_sec"] = round(time.perf_counter() - t_images, 2)
+    trace_data["engine"] = engine
+
     book_html = build_book_html(img_bytes, page_texts, title, engine)
-    
-    # Stage 3: TTS
-    loader = magic_loader_html("tts", hero_name)
-    yield (
-        loader,
-        f"Story: {title} — Recording narration...",
-        None, None, story, "", json.dumps(trace_data, indent=2),
-        gr.update(visible=False), gr.update(visible=False),
-    )
-    
+
+    while voice_thread.is_alive():
+        voice_thread.join(timeout=4)
+        if voice_thread.is_alive():
+            yield (
+                book_html,
+                f"{title} — finishing narration…",
+                None, _keep, story, "", json.dumps(trace_data, indent=2),
+                _no, _keep,
+            )
+
     audio_path = None
-    try:
-        full_text = f"{title}. {' '.join(page_texts)}"
-        audio_bytes = generate_tts_gpu(full_text, voice)
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp.write(audio_bytes)
-            audio_path = tmp.name
-    except Exception as e:
-        logger.warning(f"TTS failed: {e}")
-    
-    # Stage 4: PDFs
+    trace_data["tts_sec"] = round(time.perf_counter() - t_tts, 2)
+    if voice_box.get("bytes"):
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                tmp.write(voice_box["bytes"])
+                audio_path = tmp.name
+        except Exception as e:
+            logger.warning(f"writing audio failed: {e}")
+    elif "err" in voice_box:
+        logger.warning(f"TTS failed: {voice_box['err']}")
+
     pdf_path = None
+    t_pdf = time.perf_counter()
     try:
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
             pdf_path = export_pdf(img_bytes, page_texts, title, tmp.name)
     except Exception as e:
         logger.warning(f"PDF failed: {e}")
-    
-    # Coloring book: render the SAME scenes directly as line art with FLUX.
-    # Fall back to the older trace-from-color path only if that render fails.
+    trace_data["pdf_sec"] = round(time.perf_counter() - t_pdf, 2)
+
     coloring_html = ""
     coloring_pdf_path = None
     if make_coloring:
+        t_coloring = time.perf_counter()
         try:
             from services.coloring import _crispen
-            coloring_images = generate_coloring_images_gpu(
-                char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode
-            )
+            for kind, payload in _with_heartbeat(
+                lambda: generate_coloring_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode),
+                lambda s: (
+                    book_html,
+                    f"{title} — building coloring book… {s}s",
+                    audio_path,
+                    _keep,
+                    story,
+                    "",
+                    json.dumps(trace_data, indent=2),
+                    _no,
+                    _keep,
+                ),
+            ):
+                if kind == "hb":
+                    yield payload
+                else:
+                    coloring_images = payload
             import io
             outlines = []
             for img in coloring_images:
@@ -461,25 +689,24 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
                 trace_data["coloring_engine"] = "trace-fallback"
             except Exception as e2:
                 logger.warning(f"Coloring book fallback failed: {e2}")
-    
+        trace_data["coloring_sec"] = round(time.perf_counter() - t_coloring, 2)
+
     trace_data["completed"] = True
     trace_data["pages_generated"] = len(img_bytes)
-    trace_data["engine"] = engine
+    trace_data["total_sec"] = round(time.perf_counter() - t_total, 2)
 
-    pdf_update = (gr.update(visible=True, value=pdf_path) if pdf_path
-                  else gr.update(visible=False))
-    coloring_pdf_update = (gr.update(visible=True, value=coloring_pdf_path) if coloring_pdf_path
-                           else gr.update(visible=False))
+    pdf_update = gr.update(value=pdf_path) if pdf_path else _keep
+    coloring_pdf_update = gr.update(value=coloring_pdf_path) if coloring_pdf_path else _keep
     coloring_display_update = (gr.update(visible=True, value=coloring_html) if coloring_html
-                               else gr.update(visible=False))
+                               else _no)
 
     yield (
         book_html,
-        f"Complete: {title} — 6 pages illustrated!",
+        f"Complete: {title} — {len(img_bytes)} pages · {'FLUX (ZeroGPU)' if engine == 'flux' else 'local sketch fallback'} · voice: {voice} · total {trace_data['total_sec']}s",
         audio_path,
         pdf_update,
         story,
-        f"Pages: {len(img_bytes)} | Seed: {BASE_SEED} | Mode: {'Tiny' if tiny_mode else 'Standard'} | Engine: {engine}",
+        f"Pages: {len(img_bytes)} | Seed: {BASE_SEED} | Mode: {'Tiny' if tiny_mode else 'Standard'} | Engine: {engine} | Story {trace_data.get('story_sec', 0)}s | Images {trace_data.get('images_sec', 0)}s | PDF {trace_data.get('pdf_sec', 0)}s | Coloring {trace_data.get('coloring_sec', 0)}s",
         json.dumps(trace_data, indent=2),
         coloring_display_update,
         coloring_pdf_update,
@@ -495,4 +722,5 @@ if __name__ == "__main__":
         load_sample_fn=load_sample_book,
         create_book_fn=create_book,
     )
-    demo.launch(server_port=7870, share=False)
+    demo.queue(default_concurrency_limit=2, max_size=8)
+    demo.launch(share=False, allowed_paths=[tempfile.gettempdir()])
