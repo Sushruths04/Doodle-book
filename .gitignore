@@ -1,0 +1,17 @@
+__pycache__/
+.pytest_cache/
+*.pyc
+
+_app_log.txt
+_app_output.txt
+_applog.txt
+_crash.log
+_crash_log.txt
+_dep_tts.log
+_run_log.txt
+_stderr.txt
+_stdout.txt
+_voice_run.log
+_voice_test.wav
+
+.env

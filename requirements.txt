@@ -1,0 +1,21 @@
+# DoodleBook — Dependencies (ZeroGPU Version)
+# Core
+gradio>=5.0
+python-dotenv
+spaces
+
+# Image generation
+diffusers>=0.28
+transformers>=4.40
+accelerate
+peft
+torch
+pillow
+sentencepiece
+
+# Book building
+fpdf2
+
+# Utilities
+requests
+huggingface_hub
