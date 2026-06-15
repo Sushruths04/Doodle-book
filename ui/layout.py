@@ -30,6 +30,7 @@ THEMES = [
 # Fonts: injected via <head> (reliable) instead of CSS @import (often stripped).
 # ---------------------------------------------------------------------------
 HEAD = """
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Caveat:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -470,8 +471,64 @@ body, gradio-app {
 
 /* ============================== RESPONSIVE ============================== */
 @media (max-width: 820px) {
-  .input-card, .output-card { transform: none; }
-  .book-page { max-width: 100%; }
+  /* Fixed backgrounds kill touch-scroll on iOS Safari */
+  body, gradio-app {
+    background-attachment: scroll !important;
+  }
+
+  /* Allow the page to scroll vertically, not overflow horizontally */
+  html, body {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  gradio-app {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Keep container within viewport width */
+  .gradio-container {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 0 !important;
+  }
+
+  /* Stack the two main columns: allow flex-wrap, then make each card full-width */
+  .gradio-container .gap {
+    flex-wrap: wrap !important;
+  }
+
+  .input-card, .output-card {
+    transform: none !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Slightly smaller title on phones */
+  .app-title {
+    font-size: clamp(32px, 10vw, 52px) !important;
+  }
+
+  /* Story-book pages: full width, smaller margin */
+  .book-page {
+    max-width: 100%;
+    margin: 20px auto;
+  }
+
+  /* Theme / voice chips: tighter on small screens */
+  .theme-pick label {
+    font-size: 14px !important;
+    padding: 6px 10px !important;
+  }
 }
 
 /* ============================== ACCESSIBILITY ============================== */
