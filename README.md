@@ -1,7 +1,7 @@
 ---
 title: DoodleBook
 emoji: 📚
-colorFrom: orange
+colorFrom: red
 colorTo: yellow
 sdk: gradio
 sdk_version: "6.18.0"
