@@ -58,15 +58,16 @@ CSS = r"""
   --crayon-sky:    #4a9fd6;
   --crayon-leaf:   #74b85a;
   --tape:       rgba(244, 198, 74, 0.55);
-  /* Bedtime palette */
-  --night:      #0e0e2e;
-  --night-card: #14143a;
-  --night-2:    #1a1a4a;
+  /* Bedtime palette — twilight lavender (readable on light body bg) */
+  --twi:        #ece4ff;
+  --twi-2:      #dfd6f8;
+  --twi-deep:   #f5f2ff;
   --moon:       #c8a83c;
   --moon-glow:  #e8c84a;
-  --starlight:  #ddd8ff;
-  --star-soft:  #9090c0;
-  --night-border: #4040a0;
+  --indigo-ink: #1a1060;
+  --indigo-mid: #4a2a9a;
+  --indigo-soft:#7b5fc4;
+  --twi-border: #b8a8e8;
 }
 
 .gradio-container,
@@ -114,12 +115,12 @@ body, gradio-app {
 .db-star {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(100, 80, 200, 0.55);
   animation: db-twinkle ease-in-out infinite;
 }
 @keyframes db-twinkle {
-  0%,100% { opacity: 0.04; transform: scale(0.7); }
-  50%      { opacity: 0.95; transform: scale(1.35); }
+  0%,100% { opacity: 0.08; transform: scale(0.7); }
+  50%      { opacity: 0.6;  transform: scale(1.35); }
 }
 
 /* ============================== TABS ============================== */
@@ -208,36 +209,34 @@ body, gradio-app {
   margin: 0 0 10px; transform: rotate(-1.5deg); display: block;
 }
 
-/* ============================== BEDTIME VOICE CARDS ============================== */
+/* ============================== BEDTIME VOICE CARDS (twilight lavender) ============================== */
 .bedtime-input-card {
   position: relative;
-  background: linear-gradient(160deg, var(--night-card) 0%, var(--night) 100%) !important;
+  background: linear-gradient(160deg, var(--twi) 0%, var(--twi-2) 100%) !important;
+  border: 2.5px solid var(--twi-border) !important;
   border-radius: 18px !important;
   padding: 30px 26px 26px !important;
   margin: 8px !important;
-  box-shadow: 0 10px 26px rgba(0,0,0,.5), 0 0 50px rgba(80,80,180,.1) !important;
+  box-shadow: 0 10px 26px rgba(80,60,180,.12), 0 0 40px rgba(180,160,255,.06) !important;
   transform: rotate(-0.5deg);
-  color: var(--starlight) !important;
 }
 .bedtime-input-card:hover { transform: rotate(0deg); transition: transform .35s ease; }
 .bedtime-output-card {
   position: relative;
-  background: linear-gradient(160deg, var(--night-2) 0%, var(--night) 100%) !important;
+  background: linear-gradient(160deg, var(--twi-deep) 0%, var(--twi) 100%) !important;
+  border: 2px solid var(--twi-border) !important;
   border-radius: 18px !important;
   padding: 30px 26px 26px !important;
   margin: 8px !important;
-  box-shadow: 0 10px 26px rgba(0,0,0,.5) !important;
+  box-shadow: 0 10px 26px rgba(80,60,180,.10) !important;
   transform: rotate(0.4deg);
 }
 .bedtime-output-card:hover { transform: rotate(0deg); transition: transform .35s ease; }
 
+/* Clear Gradio internals inside bedtime cards */
 .bedtime-input-card .form, .bedtime-input-card .block,
 .bedtime-input-card .panel, .bedtime-input-card .wrap,
-.bedtime-input-card .gap, .bedtime-input-card .styler {
-  background: transparent !important;
-  border-color: rgba(64,64,160,.4) !important;
-  box-shadow: none !important;
-}
+.bedtime-input-card .gap, .bedtime-input-card .styler,
 .bedtime-output-card .form, .bedtime-output-card .block,
 .bedtime-output-card .panel, .bedtime-output-card .wrap,
 .bedtime-output-card .gap, .bedtime-output-card .styler {
@@ -248,7 +247,7 @@ body, gradio-app {
 
 .card-eyebrow-moon {
   font-family: 'Gaegu', cursive; font-weight: 700;
-  font-size: 22px; color: var(--moon);
+  font-size: 22px; color: var(--indigo-mid);
   margin: 0 0 10px; transform: rotate(-1.5deg); display: block;
 }
 
@@ -256,132 +255,130 @@ body, gradio-app {
   width: 64px; height: 64px;
   background: radial-gradient(circle at 38% 38%, #f5e87a, #c8a83c 60%, #8a6a10);
   border-radius: 50%;
-  box-shadow: 0 0 30px rgba(200,168,60,.5), 0 0 60px rgba(200,168,60,.2);
+  box-shadow: 0 0 24px rgba(200,168,60,.4), 0 0 48px rgba(200,168,60,.15);
   margin: 0 auto 16px;
   animation: moon-glow 4s ease-in-out infinite;
 }
 @keyframes moon-glow {
-  0%,100% { box-shadow: 0 0 30px rgba(200,168,60,.4), 0 0 60px rgba(200,168,60,.2); }
-  50%      { box-shadow: 0 0 50px rgba(200,168,60,.8), 0 0 90px rgba(200,168,60,.35); }
+  0%,100% { box-shadow: 0 0 20px rgba(200,168,60,.3); }
+  50%      { box-shadow: 0 0 40px rgba(200,168,60,.6), 0 0 80px rgba(200,168,60,.2); }
 }
 
-/* Night radio chips */
+/* Twilight radio chips */
 .theme-pick-night .wrap,
 .theme-pick-night [role="radiogroup"] {
   display: flex !important; flex-wrap: wrap !important; gap: 8px !important;
 }
 .theme-pick-night label {
-  background: rgba(80,80,180,.18) !important;
-  border: 2px solid var(--night-border) !important;
+  background: rgba(255,255,255,.65) !important;
+  border: 2px solid var(--twi-border) !important;
   border-radius: 14px !important;
   padding: 8px 14px !important; margin: 0 !important; cursor: pointer !important;
   font-family: 'Gaegu', cursive !important; font-size: 16px !important;
-  color: var(--starlight) !important;
+  color: var(--indigo-ink) !important;
+  box-shadow: 1px 2px 0 rgba(80,60,180,.10) !important;
   transition: transform .1s ease, background .1s ease !important;
 }
-.theme-pick-night label:hover { transform: translateY(-1px); background: rgba(100,100,220,.3) !important; }
+.theme-pick-night label:hover { transform: translateY(-1px); background: rgba(255,255,255,.9) !important; }
 .theme-pick-night label:has(input:checked) {
   background: var(--moon) !important;
-  color: var(--night) !important;
-  border-color: var(--moon-glow) !important;
-  box-shadow: 0 0 8px rgba(200,168,60,.4) !important;
+  color: #2a1a00 !important;
+  border-color: #c89e20 !important;
+  box-shadow: 2px 3px 0 rgba(80,60,0,.2) !important;
 }
 .theme-pick-night input[type="radio"] { accent-color: var(--moon); margin-right: 6px; }
 
-/* Night text fields */
+/* Twilight text fields */
 .field-night label span {
   font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 19px !important; color: var(--moon) !important;
+  font-size: 19px !important; color: var(--indigo-mid) !important;
 }
 .field-night textarea,
 .field-night input[type="text"],
 .field-night input:not([type]) {
   font-family: 'Nunito', sans-serif !important; font-size: 17px !important;
-  color: var(--starlight) !important;
-  background: rgba(100,100,200,.15) !important;
-  border: 2px solid var(--night-border) !important;
+  color: var(--indigo-ink) !important;
+  background: rgba(255,255,255,.75) !important;
+  border: 2px solid var(--twi-border) !important;
   border-radius: 12px !important;
   padding: 11px 14px !important;
 }
 .field-night textarea:focus, .field-night input:focus {
   border-color: var(--moon) !important;
-  box-shadow: 0 0 8px rgba(200,168,60,.3) !important;
+  box-shadow: 0 0 8px rgba(200,168,60,.25) !important;
   outline: none !important;
 }
 
-/* Night audio recording input */
+/* Bedtime audio input */
 .bedtime-audio label span {
   font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 19px !important; color: var(--moon) !important;
+  font-size: 19px !important; color: var(--indigo-mid) !important;
 }
-.bedtime-audio [data-testid="audio"],
-.bedtime-audio .audio {
-  background: rgba(60,60,160,.2) !important;
-  border: 2px solid var(--night-border) !important;
+.bedtime-audio [data-testid="audio"], .bedtime-audio .audio {
+  background: rgba(255,255,255,.6) !important;
+  border: 2px solid var(--twi-border) !important;
   border-radius: 12px !important;
 }
-.bedtime-audio .upload-container,
-.bedtime-audio .wrap { background: transparent !important; }
+.bedtime-audio .upload-container, .bedtime-audio .wrap { background: transparent !important; }
 
-/* Bedtime button */
+/* Bedtime button — gold on lavender */
 .btn-bedtime, .btn-bedtime button {
   font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 24px !important; color: var(--night) !important;
+  font-size: 24px !important; color: #2a1a00 !important;
   background: var(--moon) !important;
   border: 2.5px solid #8a6a10 !important; border-radius: 16px !important;
   padding: 13px 24px !important; width: 100% !important;
   transform: rotate(-0.8deg);
-  box-shadow: 4px 5px 0 rgba(0,0,0,.5) !important;
+  box-shadow: 4px 5px 0 rgba(26,16,96,.25) !important;
   transition: transform .12s ease, box-shadow .12s ease !important;
 }
 .btn-bedtime:hover, .btn-bedtime button:hover {
   transform: rotate(-0.8deg) translate(-2px,-2px);
-  box-shadow: 6px 7px 0 rgba(0,0,0,.5) !important;
+  box-shadow: 6px 7px 0 rgba(26,16,96,.25) !important;
   background: var(--moon-glow) !important;
 }
 
 /* Bedtime status */
 .bedtime-status textarea {
   font-family: 'Caveat', cursive !important; font-size: 20px !important;
-  color: var(--moon) !important;
-  background: rgba(80,80,180,.12) !important;
-  border: 2px dashed var(--night-border) !important;
+  color: var(--indigo-mid) !important;
+  background: rgba(255,255,255,.5) !important;
+  border: 2px dashed var(--twi-border) !important;
   border-radius: 12px !important; text-align: center !important;
 }
 .bedtime-status, .bedtime-status .block, .bedtime-status .form,
-.bedtime-status label span { background: transparent !important; color: var(--moon) !important; }
+.bedtime-status label span { background: transparent !important; color: var(--indigo-mid) !important; }
 
-/* Night audio players */
+/* Bedtime audio players */
 .audio-player-night {
-  background: rgba(60,60,160,.18) !important;
-  border: 2px solid var(--night-border) !important;
+  background: rgba(255,255,255,.55) !important;
+  border: 2px solid var(--twi-border) !important;
   border-radius: 14px !important;
   padding: 10px 12px !important;
 }
 .audio-player-night label span {
-  font-family: 'Gaegu', cursive !important; color: var(--moon) !important; font-size: 18px !important;
+  font-family: 'Gaegu', cursive !important; color: var(--indigo-mid) !important; font-size: 18px !important;
 }
 
 /* Bedtime story text display */
 .bedtime-title {
   font-family: 'Gaegu', cursive; font-weight: 700;
-  font-size: clamp(22px, 3.5vw, 36px); color: var(--moon);
+  font-size: clamp(22px, 3.5vw, 36px); color: var(--indigo-mid);
   text-align: center; margin-bottom: 18px;
-  text-shadow: 0 0 20px rgba(200,168,60,.3);
 }
 .bedtime-page {
   font-family: 'Caveat', cursive; font-size: clamp(18px, 2.5vw, 26px);
-  line-height: 1.6; color: var(--starlight);
+  line-height: 1.6; color: var(--indigo-ink);
   text-align: center; padding: 14px 18px; margin: 10px 0;
-  background: rgba(255,255,255,.05); border-radius: 12px;
-  border-left: 3px solid rgba(200,168,60,.3);
+  background: rgba(255,255,255,.55); border-radius: 12px;
+  border-left: 3px solid rgba(200,168,60,.5);
 }
 .bedtime-empty {
   text-align: center; padding: 60px 24px;
-  font-family: 'Gaegu', cursive; color: var(--star-soft);
+  font-family: 'Gaegu', cursive; color: var(--indigo-soft);
 }
 .bedtime-empty .moon-icon { font-size: 48px; display: block; margin-bottom: 12px; animation: bob 2.2s ease-in-out infinite; }
-.bedtime-empty .big { font-size: 26px; color: var(--starlight); margin-bottom: 6px; }
+.bedtime-empty .big { font-size: 26px; color: var(--indigo-mid); margin-bottom: 6px; }
 
 /* ============================== STORYBOOK FIELDS ============================== */
 .field label span, .doodle-input label span, .tiny-toggle label span {
@@ -791,7 +788,7 @@ The *brain* of DoodleBook — the story + the voice — is a **3B small-model st
                 gr.HTML("""
                 <div style="text-align:center;padding:20px 0 4px;">
                   <div class="moon-orb"></div>
-                  <p style="font-family:'Caveat',cursive;font-size:22px;color:#9090c0;margin-top:4px;">
+                  <p style="font-family:'Caveat',cursive;font-size:22px;color:#4a2a9a;margin-top:4px;">
                     record your voice &middot; get a bedtime story narrated in it &middot; English + Kannada
                   </p>
                 </div>
@@ -853,7 +850,7 @@ The *brain* of DoodleBook — the story + the voice — is a **3B small-model st
                             <div class="bedtime-empty">
                               <span class="moon-icon">🌙</span>
                               <p class="big">Your bedtime story appears here</p>
-                              <p style="color:#9090c0">Record your voice, pick a genre, and tap <b>Tuck in with a story 🌙</b></p>
+                              <p style="color:#7b5fc4">Record your voice, pick a genre, and tap <b>Tuck in with a story 🌙</b></p>
                             </div>
                             """,
                         )
