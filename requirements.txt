@@ -14,8 +14,10 @@ sentencepiece
 opencv-python-headless
 numpy
 
-# Voice narration (VoxCPM2) — was MISSING, so TTS always hit the silent fallback
-voxcpm
+# Voice narration (VoxCPM2). MUST be pinned: unpinned, pip resolved to voxcpm
+# 1.5.0 whose generate()/sample-rate API differs → 4 min of garbled audio.
+# 2.0.3 is the version the local Modal worker uses and is known-good.
+voxcpm==2.0.3
 
 # Book building
 fpdf2
