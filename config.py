@@ -117,6 +117,31 @@ TTS_MODEL = ModelConfig(
     modal_memory=8192,
 )
 
+# ── Bedtime Voice tab models ────────────────────────────────────────────────
+
+TRANSLATION_MODEL = ModelConfig(
+    hub_id="ai4bharat/indictrans2-en-indic-1B",
+    params_b=1.0,
+    license=LicenseType.APACHE_2_0,
+    vram_gb=3.0,
+    modal_gpu="T4",
+    modal_memory=8192,
+)
+
+KANNADA_TTS_MODEL = ModelConfig(
+    hub_id="ai4bharat/IndicF5",
+    params_b=0.5,
+    license=LicenseType.APACHE_2_0,
+    vram_gb=2.0,
+    modal_gpu="T4",
+    modal_memory=8192,
+)
+
+KANNADA_FINETUNE: str = "mitvho09/IndicF5-Kannada-Bedtime-v2"
+
+BEDTIME_GENRES: list = ["Animals", "Dragons", "Ocean", "Forest", "Space", "Kingdom"]
+BEDTIME_MOODS:  list = ["Calming", "Dreamy", "Magical", "Cozy"]
+
 
 # ============================================================================
 # VOICE PRESETS (VoxCPM2 "voice design")

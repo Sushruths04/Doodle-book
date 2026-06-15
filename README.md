@@ -21,6 +21,8 @@ models:
   - black-forest-labs/FLUX.2-klein-4B
   - openbmb/MiniCPM5-1B
   - openbmb/VoxCPM2
+  - ai4bharat/IndicF5
+  - ai4bharat/indictrans2-en-indic-1B
 ---
 
 # DoodleBook 📚🖍️
