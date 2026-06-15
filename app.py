@@ -1127,7 +1127,7 @@ def generate_bedtime_story_gpu(hero_name: str, genre: str, mood: str) -> dict:
     return _normalize_story(_build_bedtime_locally(hero_name, genre))
 
 
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=180)
 def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming") -> str:
     """VoxCPM2 bedtime narration — clones user's voice if ref_wav provided,
     otherwise uses Storyteller voice preset. Returns a temp WAV file path."""
@@ -1150,16 +1150,18 @@ def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming
     if not sentences:
         sentences = [text.strip() or "Sweet dreams."]
 
+    has_ref = bool(ref_wav and os.path.exists(str(ref_wav)))
+    # Voice cloning is slower per sentence — cap at 10 to stay within GPU budget
+    if has_ref:
+        sentences = sentences[:10]
+
     silence = np.zeros(int(0.65 * sr), dtype=np.float32)
     pieces  = []
 
     for sentence in sentences:
-        kw = dict(text=f"({style}) {sentence}", cfg_value=2.0, inference_timesteps=10, normalize=True)
-        if ref_wav and os.path.exists(str(ref_wav)):
+        kw = dict(text=f"({style}) {sentence}", cfg_value=2.0, inference_timesteps=10)
+        if has_ref:
             kw["reference_wav_path"] = ref_wav
-            kw["denoise"] = True
-            kw["retry_badcase"] = True
-            kw["retry_badcase_max_times"] = 3
         wav = model.generate(**kw)
         wav = np.asarray(wav, dtype=np.float32)
         if wav.size:
@@ -1180,10 +1182,10 @@ def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming
     return path
 
 
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=240)
 def generate_kannada_gpu(text: str, ref_wav: str, mood: str = "calming") -> str:
-    """Translate English story to Kannada (NLLB-200) and narrate via MMS-TTS-Kan.
-    ref_wav is accepted for API compatibility but MMS-TTS uses a fixed voice.
+    """Translate English story to Kannada (NLLB-200) and narrate via IndicF5/MMS-TTS-Kan.
+    ref_wav is accepted for voice cloning when IndicF5 is available.
     Returns a WAV file path."""
     if not ref_wav or not os.path.exists(str(ref_wav)):
         raise ValueError("Voice clip required to enable Kannada narration.")
@@ -1213,6 +1215,8 @@ def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):
     title      = story.get("title", "A Bedtime Story")
     page_texts = [p.get("text", "") for p in pages]
     full_text  = f"{title}. {' '.join(page_texts)}"
+    # Condensed text for Kannada: title + first 3 pages keeps translation+TTS within GPU budget
+    kn_source  = f"{title}. {' '.join(page_texts[:3])}" if page_texts else full_text
     story_html = build_bedtime_html(title, pages)
 
     yield (story_html, f"{title} — recording English narration…", None, None)
@@ -1229,7 +1233,7 @@ def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):
     kn_audio_path = None
     if ref_audio:
         try:
-            kn_audio_path = generate_kannada_gpu(full_text, ref_audio, mood)
+            kn_audio_path = generate_kannada_gpu(kn_source, ref_audio, mood)
         except Exception as e:
             logger.warning(f"Kannada TTS failed: {e}")
 
