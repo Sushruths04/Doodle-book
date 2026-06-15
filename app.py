@@ -694,4 +694,5 @@ if __name__ == "__main__":
         create_book_fn=create_book,
     )
     demo.queue(default_concurrency_limit=2, max_size=8)
-    demo.launch(share=False, allowed_paths=[tempfile.gettempdir()])
+    # design_kwargs (theme/css/js/head) is non-empty on gradio 6 (moved to launch)
+    demo.launch(share=False, allowed_paths=[tempfile.gettempdir()], **demo.design_kwargs)

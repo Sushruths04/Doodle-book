@@ -556,13 +556,21 @@ FORCE_LIGHT_JS = """
 def create_layout(load_sample_fn=None, create_book_fn=None):
     """Build the scrapbook-styled Gradio Blocks layout."""
 
-    with gr.Blocks(
+    # Gradio 6 moved theme/css/js/head from Blocks() to launch(). Keep the
+    # scrapbook design working on BOTH: pass them to Blocks on gradio 5, and
+    # stash them on the returned demo so the caller hands them to launch() on 6.
+    _gr_major = int(gr.__version__.split(".")[0])
+    design_kwargs = dict(
         css=CSS,
         head=HEAD,
         js=FORCE_LIGHT_JS,  # lock to light mode (scrapbook design is light-only)
-        title="DoodleBook",
         theme=gr.themes.Base(),  # Base, not Soft — we own the styling
-    ) as demo:
+    )
+    blocks_kwargs = dict(title="DoodleBook")
+    if _gr_major < 6:
+        blocks_kwargs.update(design_kwargs)
+
+    with gr.Blocks(**blocks_kwargs) as demo:
         # hidden SVG filters used by the hand-drawn frames
         gr.HTML(SVG_DEFS)
 
@@ -691,10 +699,12 @@ FLUX is the printer. **Tiny Titan.**
                         """
                     )
                 with gr.Tab("Trace"):
-                    trace_info = gr.Textbox(
-                        label="Generation trace (Open Trace)",
-                        interactive=False, lines=8, show_copy_button=True,
-                    )
+                    # show_copy_button was removed from Textbox in gradio 6
+                    _tb_kwargs = dict(label="Generation trace (Open Trace)",
+                                      interactive=False, lines=8)
+                    if _gr_major < 6:
+                        _tb_kwargs["show_copy_button"] = True
+                    trace_info = gr.Textbox(**_tb_kwargs)
 
         gr.HTML(
             """
@@ -717,4 +727,6 @@ FLUX is the printer. **Tiny Titan.**
         if load_sample_fn:
             demo.load(fn=load_sample_fn, outputs=[book_display])
 
+    # On gradio 6 the design params go to launch(); expose them for the caller.
+    demo.design_kwargs = design_kwargs if _gr_major >= 6 else {}
     return demo
