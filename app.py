@@ -1157,9 +1157,9 @@ def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming
         sentences = [text.strip() or "Sweet dreams."]
 
     has_ref = bool(ref_wav and os.path.exists(str(ref_wav)))
-    # Voice cloning is ~10-15s per sentence — cap at 6 to stay within 180s budget
+    # Voice cloning ~5-8s/sentence; 15 sentences ≈ 75-120s, well within 180s budget
     if has_ref:
-        sentences = sentences[:6]
+        sentences = sentences[:15]
 
     silence = np.zeros(int(0.65 * sr), dtype=np.float32)
     pieces  = []
@@ -1196,9 +1196,19 @@ def generate_kannada_gpu(text: str, ref_wav: str, mood: str = "calming") -> str:
     if not ref_wav or not os.path.exists(str(ref_wav)):
         raise ValueError("Voice clip required to enable Kannada narration.")
     from indic_text import translate_to_kannada
-    from indic_tts import narrate_kannada
-    kn_text = translate_to_kannada(text)
-    return narrate_kannada(ref_wav, "", kn_text, mood, 0.45)
+    from indic_tts import narrate_kannada, _use_indic, _mms_model
+    logger.info(f"Kannada: start. indic={_use_indic}, mms_loaded={_mms_model is not None}")
+    try:
+        kn_text = translate_to_kannada(text)
+    except Exception as te:
+        raise RuntimeError(f"Translation failed: {te}") from te
+    logger.info(f"Kannada: translated {len(kn_text)} chars → {kn_text[:80]!r}")
+    try:
+        path = narrate_kannada(ref_wav, "", kn_text, mood, 0.45)
+    except Exception as te:
+        raise RuntimeError(f"Kannada TTS failed: {te}") from te
+    logger.info(f"Kannada: done → {path}")
+    return path
 
 
 def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):
@@ -1237,16 +1247,19 @@ def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):
     yield (story_html, f"{title} — {kn_note}", en_audio_path, None)
 
     kn_audio_path = None
+    kn_error      = None
     if ref_audio:
         try:
             kn_audio_path = generate_kannada_gpu(kn_source, ref_audio, mood)
         except Exception as e:
+            kn_error = str(e)
             logger.warning(f"Kannada TTS failed: {e}")
 
     total    = round(time.perf_counter() - t0, 2)
     done_msg = f"Done: {title} · {total}s"
     if ref_audio and not kn_audio_path:
-        done_msg += "  · Kannada narration failed"
+        short_err = (kn_error or "unknown error")[:80]
+        done_msg += f"  · Kannada failed: {short_err}"
     elif not ref_audio:
         done_msg += "  · record your voice to get Kannada narration"
 
