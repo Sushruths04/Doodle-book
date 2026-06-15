@@ -1151,9 +1151,9 @@ def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming
         sentences = [text.strip() or "Sweet dreams."]
 
     has_ref = bool(ref_wav and os.path.exists(str(ref_wav)))
-    # Voice cloning is slower per sentence — cap at 10 to stay within GPU budget
+    # Voice cloning is ~10-15s per sentence — cap at 6 to stay within 180s budget
     if has_ref:
-        sentences = sentences[:10]
+        sentences = sentences[:6]
 
     silence = np.zeros(int(0.65 * sr), dtype=np.float32)
     pieces  = []

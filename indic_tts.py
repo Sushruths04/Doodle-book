@@ -1,5 +1,9 @@
 """Kannada TTS — primary: sush0401/IndicF5-Kannada-Bedtime-v2 (fine-tuned, non-gated).
 Fallback: facebook/mms-tts-kan (VITS, 16kHz, no voice cloning).
+
+ZeroGPU pattern: models loaded to CPU at module scope so ZeroGPU packs their
+tensors. Inside inference functions (called from @spaces.GPU), .to("cuda") is
+called and ZeroGPU transfers packed tensors to GPU — no re-download needed.
 """
 from __future__ import annotations
 import os
@@ -21,9 +25,10 @@ MMS_SR = 16_000
 def _load_indic():
     global _indic_model, _use_indic
     from transformers import AutoModel
+    # Load to CPU — ZeroGPU packs these tensors.
     _indic_model = AutoModel.from_pretrained(
         _FINETUNE_HUB, trust_remote_code=True,
-    ).to("cuda").eval()
+    )
     _use_indic = True
 
 
@@ -31,7 +36,8 @@ def _load_mms():
     global _mms_model, _mms_tok
     from transformers import VitsModel, AutoTokenizer
     _mms_tok   = AutoTokenizer.from_pretrained(_FALLBACK_HUB)
-    _mms_model = VitsModel.from_pretrained(_FALLBACK_HUB).to("cuda").eval()
+    # Load to CPU — ZeroGPU packs these tensors.
+    _mms_model = VitsModel.from_pretrained(_FALLBACK_HUB)
 
 
 def _get_model():
@@ -40,12 +46,10 @@ def _get_model():
             _load_indic()
         except Exception:
             _load_mms()
-    elif not _use_indic:
-        pass  # already loaded MMS
     return _use_indic
 
 
-# Pre-load at module scope on ZeroGPU
+# Pre-load to CPU at module scope so ZeroGPU packs the tensors.
 try:
     _get_model()
 except Exception:
@@ -68,8 +72,9 @@ def _split(text: str, max_chars: int = 200):
     return out or [text.strip()]
 
 
-def _narrate_indic(ref_wav: str, kannada_text: str) -> np.ndarray:
-    model = _indic_model
+def _narrate_indic(ref_wav: str, kannada_text: str) -> tuple[np.ndarray, int]:
+    # Move to GPU — ZeroGPU intercepts this inside @spaces.GPU.
+    model = _indic_model.to("cuda")
     silence_sr = 24_000
     silence = np.zeros(int(0.55 * silence_sr), dtype=np.float32)
     chunks = []
@@ -86,12 +91,14 @@ def _narrate_indic(ref_wav: str, kannada_text: str) -> np.ndarray:
 
 
 def _narrate_mms(kannada_text: str) -> tuple[np.ndarray, int]:
+    # Move to GPU — ZeroGPU intercepts this inside @spaces.GPU.
+    model = _mms_model.to("cuda")
     silence = np.zeros(int(0.55 * MMS_SR), dtype=np.float32)
     chunks = []
     for sent in _split(kannada_text):
-        inputs = _mms_tok(sent, return_tensors="pt").to("cuda")
+        inputs = _mms_tok(sent, return_tensors="pt").to(model.device)
         with torch.no_grad():
-            wav = _mms_model(**inputs).waveform
+            wav = model(**inputs).waveform
         audio = wav.squeeze().cpu().float().numpy()
         if audio.size:
             chunks.append(audio)
