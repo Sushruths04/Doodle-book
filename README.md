@@ -33,6 +33,20 @@ Built for the **Build Small Hackathon 2026 · Adventure in Thousand Token Wood**
 
 ---
 
+## 🔗 Links
+
+| | |
+|---|---|
+| 🚀 **Live Space** | [huggingface.co/spaces/build-small-hackathon/DoodleBook](https://huggingface.co/spaces/build-small-hackathon/DoodleBook) |
+| 📝 **Article / Blog Post** | [docs/article.md](docs/article.md) |
+| 🔬 **Field Notes** (technical deep-dive) | [docs/blog.md](docs/blog.md) |
+| 💻 **Source code** | [github.com/Sushruths04/Doodle-book](https://github.com/Sushruths04/Doodle-book) |
+| 🤖 **MiniCPM5-1B** (story) | [huggingface.co/openbmb/MiniCPM5-1B](https://huggingface.co/openbmb/MiniCPM5-1B) |
+| 🔊 **VoxCPM2** (narration) | [huggingface.co/openbmb/VoxCPM2](https://huggingface.co/openbmb/VoxCPM2) |
+| 🎨 **FLUX.2-klein-4B** (illustration) | [huggingface.co/black-forest-labs/FLUX.2-klein-4B](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B) |
+
+---
+
 ## ✨ What it does
 
 1. **Draw & upload** a character (upload or webcam).
