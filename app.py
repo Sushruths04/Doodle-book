@@ -106,8 +106,9 @@ if ON_ZEROGPU:
             logger.exception(f"Module-level load failed for {_name}")
 
 COLOR_ART_STYLE = (
-    "children's crayon storybook illustration, bold black outlines, "
-    "flat bright colors, simple shapes"
+    "hand-drawn crayon children's storybook illustration, soft waxy crayon "
+    "texture and visible crayon strokes, warm colorful crayon shading, "
+    "simple friendly shapes, looks drawn by hand with crayons"
 )
 COLOR_PAGE_SUFFIX = "full colorful background scene, the character clearly visible."
 LINE_ART_STYLE = (
@@ -381,52 +382,28 @@ def generate_images_gpu(
 
 
 @spaces.GPU(duration=150)
-def generate_coloring_images_gpu(
-    character_desc: str,
-    scenes: list,
-    doodle_bytes: bytes = None,
-    seed: int = 42,
-) -> list:
-    """Generate coloring pages directly with FLUX as line art (no tracing)."""
+def generate_coloring_images_gpu(color_pngs: list, seed: int = 7) -> list:
+    """Coloring pages = FLUX redraws each finished COLOR page as clean line art
+    (img2img). This MATCHES the storybook composition and avoids the speckly
+    look of tracing crayon texture. Caller crispens the result to black-on-white."""
     import io
     from PIL import Image
 
     pipe = load_flux()
-    num_steps, guidance = 6, 1.0
-
-    canonical = None
-    if doodle_bytes:
-        try:
-            ref = Image.open(io.BytesIO(doodle_bytes)).convert("RGB")
-            canonical = pipe(
-                prompt=(f"Turn this child's drawing into a clean, friendly, full-body cartoon "
-                        f"character for a children's coloring book. Keep the EXACT same creature, "
-                        f"face, and features as the drawing. {LINE_ART_STYLE}, "
-                        f"plain white background, full character visible, centered."),
-                image=ref, height=768, width=768, guidance_scale=guidance,
-                num_inference_steps=num_steps,
-                generator=torch.Generator("cuda").manual_seed(seed),
-            ).images[0]
-            logger.info("Line-art canonical character built from doodle")
-        except Exception as e:
-            logger.warning(f"Line-art canonical build failed ({e}); text2img fallback")
-            canonical = None
-
-    images = []
-    for i, scene in enumerate(scenes):
-        if canonical is not None:
-            prompt = f"The same character. {scene}. {LINE_ART_STYLE}, {LINE_ART_SUFFIX}"
-            kw = dict(image=canonical, prompt=prompt)
-        else:
-            prompt = (f"{character_desc}. Scene: {scene}. {LINE_ART_STYLE}, "
-                      f"white background, centered, full character visible")
-            kw = dict(prompt=prompt)
-        kw.update(height=768, width=768, guidance_scale=guidance,
-                  num_inference_steps=num_steps,
-                  generator=torch.Generator("cuda").manual_seed(seed + i + 101))
-        images.append(pipe(**kw).images[0])
-        logger.info(f"Generated coloring page {i+1}/{len(scenes)}")
-    return images
+    prompt = f"{LINE_ART_STYLE}, {LINE_ART_SUFFIX}"
+    outs = []
+    for i, png in enumerate(color_pngs):
+        ref = Image.open(io.BytesIO(png)).convert("RGB")
+        base = dict(prompt=prompt, image=ref, height=768, width=768,
+                    guidance_scale=1.0, num_inference_steps=6,
+                    generator=torch.Generator("cuda").manual_seed(seed + i))
+        try:                                  # strength may not be accepted
+            img = pipe(**base, strength=0.85).images[0]
+        except TypeError:
+            img = pipe(**base).images[0]
+        outs.append(img)
+        logger.info(f"Generated coloring page {i+1}/{len(color_pngs)}")
+    return outs
 
 
 @spaces.GPU(duration=120)
@@ -546,16 +523,44 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
 
     full_text = f"{title}. {' '.join(page_texts)}"
 
-    # ---- IMAGES (FLUX on ZeroGPU) ----
-    img_bytes, engine = None, "sketch"
+    # ---- NARRATION starts NOW, in PARALLEL with the images (it only needs the
+    #      story text). The audio is surfaced the moment it's ready — usually
+    #      before the illustrations finish — so narration appears first. ----
+    import threading
+    voice_box = {}
+    t_tts = time.perf_counter()
+
+    def _do_voice():
+        try:
+            voice_box["bytes"] = generate_tts_gpu(full_text, voice)
+        except Exception as e:
+            voice_box["err"] = e
+
+    voice_thread = threading.Thread(target=_do_voice, daemon=True)
+    voice_thread.start()
+
+    def _audio_now():
+        """Write the narration to a temp wav once it's ready; return its path."""
+        if voice_box.get("bytes") and not voice_box.get("path"):
+            try:
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+                    tmp.write(voice_box["bytes"])
+                    voice_box["path"] = tmp.name
+            except Exception as e:
+                logger.warning(f"writing audio failed: {e}")
+        return voice_box.get("path")
+
+    # ---- IMAGES (FLUX on ZeroGPU), surfacing the narration as soon as it lands ----
+    img_bytes, engine, images = None, "sketch", None
     t_images = time.perf_counter()
     try:
         for kind, payload in _with_heartbeat(
             lambda: generate_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED),
             lambda s: (
                 magic_loader_html("images", hero_name),
-                f"{title} — illustrating on ZeroGPU… {s}s",
-                None, _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
+                f"{title} — illustrating… {s}s"
+                + ("  ·  narration ready ▶" if _audio_now() else "  ·  recording narration…"),
+                _audio_now(), _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
             ),
         ):
             if kind == "hb":
@@ -580,28 +585,17 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
 
     book_html = build_book_html(img_bytes, page_texts, title, engine)
 
-    # ---- NARRATION (VoxCPM2 on ZeroGPU) — sequential: one GPU per request ----
-    audio_path = None
-    t_tts = time.perf_counter()
-    try:
-        for kind, payload in _with_heartbeat(
-            lambda: generate_tts_gpu(full_text, voice),
-            lambda s: (
-                book_html,
-                f"{title} — recording the narration… {s}s",
-                None, _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
-            ),
-        ):
-            if kind == "hb":
-                yield payload
-            else:
-                voice_bytes = payload
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp.write(voice_bytes)
-            audio_path = tmp.name
-    except Exception as e:
-        logger.exception("TTS failed")
-        trace_data["tts_error"] = repr(e)
+    # ---- collect the parallel narration (usually already finished) ----
+    while voice_thread.is_alive():
+        voice_thread.join(timeout=4)
+        if voice_thread.is_alive():
+            yield (book_html, f"{title} — finishing narration…",
+                   _audio_now(), _keep, story, "", json.dumps(trace_data, indent=2),
+                   _no, _keep)
+    audio_path = _audio_now()
+    if voice_box.get("err"):
+        logger.warning(f"TTS failed: {voice_box['err']}")
+        trace_data["tts_error"] = repr(voice_box["err"])
     trace_data["tts_sec"] = round(time.perf_counter() - t_tts, 2)
 
     pdf_path = None
@@ -620,7 +614,7 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
         try:
             from services.coloring import _crispen
             for kind, payload in _with_heartbeat(
-                lambda: generate_coloring_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED),
+                lambda: generate_coloring_images_gpu(img_bytes, 7),
                 lambda s: (
                     book_html,
                     f"{title} — building coloring book… {s}s",
@@ -649,25 +643,30 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
             trace_data["coloring_book"] = True
             trace_data["coloring_engine"] = "flux-direct-lineart"
         except Exception as e:
-            logger.warning(f"Direct FLUX coloring book failed ({e}); using traced fallback")
+            logger.exception("FLUX line-art coloring failed; using local trace fallback")
+            trace_data["coloring_error"] = repr(e)
             try:
-                from services.coloring import derive_coloring_pages
-                outlines = derive_coloring_pages(img_bytes)
+                from services.coloring import _to_line_art_opencv
+                outlines = [_to_line_art_opencv(b) for b in img_bytes]
                 coloring_html = build_coloring_html(outlines, page_texts, title)
                 with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
                     coloring_pdf_path = export_coloring_pdf(outlines, page_texts, title, tmp.name)
                 trace_data["coloring_book"] = True
-                trace_data["coloring_engine"] = "trace-fallback"
+                trace_data["coloring_engine"] = "opencv-trace-fallback"
             except Exception as e2:
-                logger.warning(f"Coloring book fallback failed: {e2}")
+                logger.exception("Coloring fallback also failed")
+                trace_data["coloring_error2"] = repr(e2)
         trace_data["coloring_sec"] = round(time.perf_counter() - t_coloring, 2)
 
     trace_data["completed"] = True
     trace_data["pages_generated"] = len(img_bytes)
     trace_data["total_sec"] = round(time.perf_counter() - t_total, 2)
 
-    pdf_update = gr.update(value=pdf_path) if pdf_path else _keep
-    coloring_pdf_update = gr.update(value=coloring_pdf_path) if coloring_pdf_path else _keep
+    # Reveal the download buttons (they start visible=False) — value alone left
+    # them hidden, which is why there was "no download option" (incl. on mobile).
+    pdf_update = gr.update(value=pdf_path, visible=True) if pdf_path else _keep
+    coloring_pdf_update = (gr.update(value=coloring_pdf_path, visible=True)
+                           if coloring_pdf_path else _keep)
     coloring_display_update = (gr.update(visible=True, value=coloring_html) if coloring_html
                                else _no)
 
