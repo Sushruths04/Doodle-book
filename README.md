@@ -12,12 +12,15 @@ tags:
   - build-small
   - adventure-in-thousand-token-wood
   - gradio
-  - modal
   - flux
-  - minicmp
+  - minicpm
   - voxcpm
   - storybook
   - coloring-book
+models:
+  - black-forest-labs/FLUX.2-klein-4B
+  - openbmb/MiniCPM5-1B
+  - openbmb/VoxCPM2
 ---
 
 # DoodleBook

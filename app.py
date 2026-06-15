@@ -46,11 +46,64 @@ from ui.layout import create_layout
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# ZeroGPU sets SPACES_ZERO_GPU. On the Space we load models on cuda at IMPORT
+# (a CUDA-emulation layer makes that work without a real GPU); lazy-loading
+# inside @spaces.GPU is explicitly discouraged and was why FLUX kept failing
+# → sketch. Guarded so a local/dev import doesn't try to pull ~20GB of weights.
+ON_ZEROGPU = bool(os.environ.get("SPACES_ZERO_GPU"))
+
+_FLUX_PIPE = None
 _STORY_MODEL = None
 _STORY_TOKENIZER = None
-_IMAGE_PIPE = None
-_IMAGE_PIPE_KIND = None
 _TTS_MODEL = None
+_LOAD_ERRORS = {}
+
+
+def load_flux():
+    """FLUX image pipeline placed on cuda at module scope (the ZeroGPU pattern).
+    No enable_model_cpu_offload() — that fights ZeroGPU's device management."""
+    global _FLUX_PIPE
+    if _FLUX_PIPE is None:
+        from diffusers import Flux2KleinPipeline
+        logger.info(f"Loading image model: {FLUX_MODEL.hub_id}")
+        pipe = Flux2KleinPipeline.from_pretrained(
+            FLUX_MODEL.hub_id, torch_dtype=torch.bfloat16,
+        )
+        pipe.to("cuda")
+        _FLUX_PIPE = pipe
+    return _FLUX_PIPE
+
+
+def load_story():
+    global _STORY_MODEL, _STORY_TOKENIZER
+    if _STORY_MODEL is None:
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+        logger.info(f"Loading story model: {STORY_MODEL.hub_id}")
+        _STORY_TOKENIZER = AutoTokenizer.from_pretrained(
+            STORY_MODEL.hub_id, trust_remote_code=True,
+        )
+        _STORY_MODEL = AutoModelForCausalLM.from_pretrained(
+            STORY_MODEL.hub_id, torch_dtype=torch.float16, trust_remote_code=True,
+        ).to("cuda").eval()
+    return _STORY_MODEL, _STORY_TOKENIZER
+
+
+def load_tts():
+    global _TTS_MODEL
+    if _TTS_MODEL is None:
+        from voxcpm import VoxCPM
+        logger.info(f"Loading TTS model: {TTS_MODEL.hub_id}")
+        _TTS_MODEL = VoxCPM.from_pretrained(TTS_MODEL.hub_id, load_denoiser=False)
+    return _TTS_MODEL
+
+
+if ON_ZEROGPU:
+    for _name, _loader in (("flux", load_flux), ("story", load_story), ("tts", load_tts)):
+        try:
+            _loader()
+        except Exception as _e:                       # keep the Space booting
+            _LOAD_ERRORS[_name] = repr(_e)
+            logger.exception(f"Module-level load failed for {_name}")
 
 COLOR_ART_STYLE = (
     "children's crayon storybook illustration, bold black outlines, "
@@ -248,21 +301,10 @@ def load_sample_book() -> str:
 @spaces.GPU(duration=60)
 def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
     """Generate a story on ZeroGPU, falling back to a deterministic local story."""
-    global _STORY_MODEL, _STORY_TOKENIZER
     try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-
-        if _STORY_MODEL is None or _STORY_TOKENIZER is None:
-            logger.info(f"Loading story model: {STORY_MODEL.hub_id}")
-            _STORY_TOKENIZER = AutoTokenizer.from_pretrained(STORY_MODEL.hub_id, trust_remote_code=True)
-            _STORY_MODEL = AutoModelForCausalLM.from_pretrained(
-                STORY_MODEL.hub_id,
-                torch_dtype=torch.float16,
-                trust_remote_code=True,
-            ).cuda().eval()
-
+        model, tok = load_story()
         prompt = build_story_prompt(hero_name, theme, age)
-        inputs = _STORY_TOKENIZER.apply_chat_template(
+        inputs = tok.apply_chat_template(
             [{"role": "user", "content": prompt}],
             add_generation_prompt=True,
             enable_thinking=False,
@@ -270,12 +312,12 @@ def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
             return_tensors="pt",
         ).to("cuda")
         with torch.no_grad():
-            out = _STORY_MODEL.generate(
+            out = model.generate(
                 **inputs,
                 max_new_tokens=GENERATION_PARAMS.max_story_tokens,
                 do_sample=False,
             )
-        response = _STORY_TOKENIZER.decode(
+        response = tok.decode(
             out[0][inputs["input_ids"].shape[1]:],
             skip_special_tokens=True,
         )
@@ -288,137 +330,83 @@ def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
     return _normalize_story(build_story_locally(hero_name, theme))
 
 
-def _get_image_pipe(tiny: bool):
-    global _IMAGE_PIPE, _IMAGE_PIPE_KIND
-    desired = "tiny" if tiny else "flux"
-    if _IMAGE_PIPE is not None and _IMAGE_PIPE_KIND == desired:
-        return _IMAGE_PIPE
-
-    if tiny:
-        from diffusers import AutoPipelineForText2Image
-        pipe = AutoPipelineForText2Image.from_pretrained(
-            "stabilityai/sd-turbo",
-            torch_dtype=torch.float16,
-        ).cuda()
-    else:
-        from diffusers import Flux2KleinPipeline
-        pipe = Flux2KleinPipeline.from_pretrained(
-            FLUX_MODEL.hub_id,
-            torch_dtype=torch.bfloat16,
-        ).cuda()
-        pipe.enable_model_cpu_offload()
-
-    _IMAGE_PIPE = pipe
-    _IMAGE_PIPE_KIND = desired
-    return pipe
-
-
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=150)
 def generate_images_gpu(
     character_desc: str,
     scenes: list,
     doodle_bytes: bytes = None,
     seed: int = 42,
-    tiny: bool = False
 ) -> list:
-    """Generate all 6 images using FLUX on ZeroGPU."""
+    """Generate all story pages with FLUX on ZeroGPU (two-stage: canonical
+    character from the doodle, then the same character in each scene)."""
     import io
     from PIL import Image
-    
-    pipe = _get_image_pipe(tiny)
-    if tiny:
-        num_steps = 4
-        guidance = 0.0
-    else:
-        num_steps = 6
-        guidance = 1.0
-    
+
+    pipe = load_flux()
+    num_steps, guidance = 6, 1.0
+
     canonical = None
     if doodle_bytes:
         try:
             ref = Image.open(io.BytesIO(doodle_bytes)).convert("RGB")
-            kw = dict(
+            canonical = pipe(
                 prompt=(f"Turn this child's drawing into a clean, friendly, full-body cartoon "
                         f"character for a children's storybook. Keep the EXACT same creature, "
                         f"face, and features as the drawing. {COLOR_ART_STYLE}, "
                         f"plain white background, full character visible, centered."),
-                height=768, width=768, guidance_scale=guidance,
+                image=ref, height=768, width=768, guidance_scale=guidance,
                 num_inference_steps=num_steps,
-                generator=torch.Generator("cuda").manual_seed(seed)
-            )
-            if tiny:
-                kw["prompt"] = f"A friendly cartoon character, {COLOR_ART_STYLE}"
-            else:
-                kw["image"] = ref
-            canonical = pipe(**kw).images[0]
+                generator=torch.Generator("cuda").manual_seed(seed),
+            ).images[0]
             logger.info("Canonical character built from doodle")
         except Exception as e:
             logger.warning(f"Canonical build failed ({e}); text2img fallback")
             canonical = None
-    
+
     images = []
     for i, scene in enumerate(scenes):
-        if canonical is not None and not tiny:
+        if canonical is not None:
             prompt = f"The same character. {scene}. {COLOR_ART_STYLE}, {COLOR_PAGE_SUFFIX}"
             kw = dict(image=canonical, prompt=prompt)
         else:
-            prompt = (
-                f"{character_desc}. Scene: {scene}. {COLOR_ART_STYLE}, "
-                f"white background, centered, full character visible"
-            )
+            prompt = (f"{character_desc}. Scene: {scene}. {COLOR_ART_STYLE}, "
+                      f"white background, centered, full character visible")
             kw = dict(prompt=prompt)
-        
-        kw.update(dict(
-            height=768, width=768, guidance_scale=guidance,
-            num_inference_steps=num_steps,
-            generator=torch.Generator("cuda").manual_seed(seed + i + 1)
-        ))
-        
-        image = pipe(**kw).images[0]
-        images.append(image)
-        logger.info(f"Generated page {i+1}/6")
-    
+        kw.update(height=768, width=768, guidance_scale=guidance,
+                  num_inference_steps=num_steps,
+                  generator=torch.Generator("cuda").manual_seed(seed + i + 1))
+        images.append(pipe(**kw).images[0])
+        logger.info(f"Generated page {i+1}/{len(scenes)}")
     return images
 
 
-@spaces.GPU(duration=120)
+@spaces.GPU(duration=150)
 def generate_coloring_images_gpu(
     character_desc: str,
     scenes: list,
     doodle_bytes: bytes = None,
     seed: int = 42,
-    tiny: bool = False
 ) -> list:
-    """Generate coloring pages directly with FLUX instead of tracing color pages."""
+    """Generate coloring pages directly with FLUX as line art (no tracing)."""
     import io
     from PIL import Image
 
-    pipe = _get_image_pipe(tiny)
-    if tiny:
-        num_steps = 4
-        guidance = 0.0
-    else:
-        num_steps = 6
-        guidance = 1.0
+    pipe = load_flux()
+    num_steps, guidance = 6, 1.0
 
     canonical = None
     if doodle_bytes:
         try:
             ref = Image.open(io.BytesIO(doodle_bytes)).convert("RGB")
-            kw = dict(
+            canonical = pipe(
                 prompt=(f"Turn this child's drawing into a clean, friendly, full-body cartoon "
                         f"character for a children's coloring book. Keep the EXACT same creature, "
                         f"face, and features as the drawing. {LINE_ART_STYLE}, "
                         f"plain white background, full character visible, centered."),
-                height=768, width=768, guidance_scale=guidance,
+                image=ref, height=768, width=768, guidance_scale=guidance,
                 num_inference_steps=num_steps,
-                generator=torch.Generator('cuda').manual_seed(seed)
-            )
-            if tiny:
-                kw["prompt"] = f"A friendly cartoon character, {LINE_ART_STYLE}"
-            else:
-                kw["image"] = ref
-            canonical = pipe(**kw).images[0]
+                generator=torch.Generator("cuda").manual_seed(seed),
+            ).images[0]
             logger.info("Line-art canonical character built from doodle")
         except Exception as e:
             logger.warning(f"Line-art canonical build failed ({e}); text2img fallback")
@@ -426,43 +414,30 @@ def generate_coloring_images_gpu(
 
     images = []
     for i, scene in enumerate(scenes):
-        if canonical is not None and not tiny:
+        if canonical is not None:
             prompt = f"The same character. {scene}. {LINE_ART_STYLE}, {LINE_ART_SUFFIX}"
             kw = dict(image=canonical, prompt=prompt)
         else:
-            prompt = (
-                f"{character_desc}. Scene: {scene}. {LINE_ART_STYLE}, "
-                f"white background, centered, full character visible"
-            )
+            prompt = (f"{character_desc}. Scene: {scene}. {LINE_ART_STYLE}, "
+                      f"white background, centered, full character visible")
             kw = dict(prompt=prompt)
-
-        kw.update(dict(
-            height=768, width=768, guidance_scale=guidance,
-            num_inference_steps=num_steps,
-            generator=torch.Generator("cuda").manual_seed(seed + i + 101)
-        ))
-
-        image = pipe(**kw).images[0]
-        images.append(image)
-        logger.info(f"Generated coloring page {i+1}/6")
-
+        kw.update(height=768, width=768, guidance_scale=guidance,
+                  num_inference_steps=num_steps,
+                  generator=torch.Generator("cuda").manual_seed(seed + i + 101))
+        images.append(pipe(**kw).images[0])
+        logger.info(f"Generated coloring page {i+1}/{len(scenes)}")
     return images
 
 
-@spaces.GPU(duration=30)
+@spaces.GPU(duration=120)
 def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
-    """Generate TTS when available; otherwise return a tiny silent WAV."""
-    global _TTS_MODEL
+    """Narrate the book with VoxCPM2. Raises on failure so the caller can show
+    the real reason instead of silently shipping a silent clip."""
     import io
     import numpy as np
 
     try:
-        from voxcpm import VoxCPM
-        if _TTS_MODEL is None:
-            logger.info(f"Loading TTS model: {TTS_MODEL.hub_id}")
-            _TTS_MODEL = VoxCPM.from_pretrained(TTS_MODEL.hub_id, load_denoiser=False)
-        model = _TTS_MODEL
-
+        model = load_tts()
         design = voice_design(voice)
 
         import re
@@ -491,16 +466,19 @@ def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
         return buf.getvalue()
     
     except Exception as e:
-        logger.warning(f"TTS unavailable on Space ({e}); returning silent fallback")
-        return silent_wav_bytes()
+        # Surface the real reason (e.g. missing model) instead of a silent clip
+        # that looks like it worked. create_book records this in the trace.
+        logger.exception("TTS failed")
+        raise
 
 
 # ============================================================================
 # MAIN BOOK CREATION (Generator for streaming)
 # ============================================================================
 
-def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False, voice=DEFAULT_VOICE, make_coloring=False):
-    """ZeroGPU copy of the local app flow with heartbeats, timing, and coloring support."""
+def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VOICE, make_coloring=False):
+    """ZeroGPU book flow: story → images → narration → PDFs → coloring book,
+    each a sequential @spaces.GPU call (ZeroGPU has one GPU per request)."""
     t_total = time.perf_counter()
     character_name = (character_name or "").strip() or "Little Hero"
     hero_name = (hero_name or "").strip() or character_name
@@ -509,12 +487,13 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         "backend": "zerogpu",
         "hero_name": hero_name,
         "theme": theme,
-        "tiny_mode": tiny_mode,
         "voice": voice,
         "make_coloring": make_coloring,
         "seed": BASE_SEED,
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    if _LOAD_ERRORS:
+        trace_data["model_load_errors"] = _LOAD_ERRORS
     
     _no = gr.update(visible=False)
     _keep = gr.update()
@@ -565,28 +544,17 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         img.save(buf, format="PNG")
         doodle_bytes = buf.getvalue()
 
-    import threading
-    voice_box = {}
     full_text = f"{title}. {' '.join(page_texts)}"
-    t_tts = time.perf_counter()
 
-    def _do_voice():
-        try:
-            voice_box["bytes"] = generate_tts_gpu(full_text, voice)
-        except Exception as e:
-            voice_box["err"] = e
-
-    voice_thread = threading.Thread(target=_do_voice, daemon=True)
-    voice_thread.start()
-
+    # ---- IMAGES (FLUX on ZeroGPU) ----
     img_bytes, engine = None, "sketch"
     t_images = time.perf_counter()
     try:
         for kind, payload in _with_heartbeat(
-            lambda: generate_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode),
+            lambda: generate_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED),
             lambda s: (
                 magic_loader_html("images", hero_name),
-                f"{title} — illustrating… {s}s  (voice recording in parallel)",
+                f"{title} — illustrating on ZeroGPU… {s}s",
                 None, _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
             ),
         ):
@@ -602,7 +570,8 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
             img_bytes.append(buf.getvalue())
         engine = "flux"
     except Exception as e:
-        logger.error(f"Image generation failed: {e}")
+        logger.exception("Image generation failed")
+        trace_data["image_error"] = repr(e)
         from services.images import generate_placeholder_images
         img_bytes = generate_placeholder_images(char_desc, scenes, doodle_bytes)
         engine = "sketch"
@@ -611,27 +580,29 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
 
     book_html = build_book_html(img_bytes, page_texts, title, engine)
 
-    while voice_thread.is_alive():
-        voice_thread.join(timeout=4)
-        if voice_thread.is_alive():
-            yield (
-                book_html,
-                f"{title} — finishing narration…",
-                None, _keep, story, "", json.dumps(trace_data, indent=2),
-                _no, _keep,
-            )
-
+    # ---- NARRATION (VoxCPM2 on ZeroGPU) — sequential: one GPU per request ----
     audio_path = None
+    t_tts = time.perf_counter()
+    try:
+        for kind, payload in _with_heartbeat(
+            lambda: generate_tts_gpu(full_text, voice),
+            lambda s: (
+                book_html,
+                f"{title} — recording the narration… {s}s",
+                None, _keep, story, "", json.dumps(trace_data, indent=2), _no, _keep,
+            ),
+        ):
+            if kind == "hb":
+                yield payload
+            else:
+                voice_bytes = payload
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(voice_bytes)
+            audio_path = tmp.name
+    except Exception as e:
+        logger.exception("TTS failed")
+        trace_data["tts_error"] = repr(e)
     trace_data["tts_sec"] = round(time.perf_counter() - t_tts, 2)
-    if voice_box.get("bytes"):
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-                tmp.write(voice_box["bytes"])
-                audio_path = tmp.name
-        except Exception as e:
-            logger.warning(f"writing audio failed: {e}")
-    elif "err" in voice_box:
-        logger.warning(f"TTS failed: {voice_box['err']}")
 
     pdf_path = None
     t_pdf = time.perf_counter()
@@ -649,7 +620,7 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         try:
             from services.coloring import _crispen
             for kind, payload in _with_heartbeat(
-                lambda: generate_coloring_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED, tiny_mode),
+                lambda: generate_coloring_images_gpu(char_desc, scenes, doodle_bytes, BASE_SEED),
                 lambda s: (
                     book_html,
                     f"{title} — building coloring book… {s}s",
@@ -706,7 +677,7 @@ def create_book(doodle_image, character_name, theme, hero_name, tiny_mode=False,
         audio_path,
         pdf_update,
         story,
-        f"Pages: {len(img_bytes)} | Seed: {BASE_SEED} | Mode: {'Tiny' if tiny_mode else 'Standard'} | Engine: {engine} | Story {trace_data.get('story_sec', 0)}s | Images {trace_data.get('images_sec', 0)}s | PDF {trace_data.get('pdf_sec', 0)}s | Coloring {trace_data.get('coloring_sec', 0)}s",
+        f"Pages: {len(img_bytes)} | Seed: {BASE_SEED} | Engine: {engine} | Story {trace_data.get('story_sec', 0)}s | Images {trace_data.get('images_sec', 0)}s | PDF {trace_data.get('pdf_sec', 0)}s | Coloring {trace_data.get('coloring_sec', 0)}s",
         json.dumps(trace_data, indent=2),
         coloring_display_update,
         coloring_pdf_update,

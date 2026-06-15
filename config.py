@@ -86,36 +86,16 @@ class ModelConfig:
 # Fallbacks selected for license compatibility (Apache 2.0 preferred).
 #
 
+# The three sponsor models DoodleBook actually loads. Fallback/variant configs
+# were removed so the HF Space links exactly these three (HF auto-links any
+# model id it finds in the repo files).
+
 FLUX_MODEL = ModelConfig(
     hub_id="black-forest-labs/FLUX.2-klein-4B",
     params_b=4.0,
     license=LicenseType.APACHE_2_0,
     vram_gb=13.0,
-    fallback_id="black-forest-labs/FLUX.1-schnell",
-    fallback_reason="12B, Apache 2.0, 1-4 step distilled, fast inference",
     modal_gpu="A10G",  # 24GB fits the ~13GB model; A100-40GB was overkill
-    modal_memory=32768,
-)
-
-FLUX_MODEL_9B = ModelConfig(
-    hub_id="black-forest-labs/FLUX.2-klein-9B",
-    params_b=9.0,
-    license=LicenseType.NON_COMMERCIAL,
-    vram_gb=29.0,
-    fallback_id="black-forest-labs/FLUX.2-klein-4B",
-    fallback_reason="4B variant with Apache 2.0 license",
-    is_primary=False,
-    modal_gpu="A100",
-    modal_memory=32768,
-)
-
-FLUX_FALLBACK = ModelConfig(
-    hub_id="black-forest-labs/FLUX.1-schnell",
-    params_b=12.0,
-    license=LicenseType.APACHE_2_0,
-    vram_gb=24.0,
-    is_primary=False,
-    modal_gpu="A100",
     modal_memory=32768,
 )
 
@@ -124,18 +104,6 @@ STORY_MODEL = ModelConfig(
     params_b=1.0,
     license=LicenseType.APACHE_2_0,
     vram_gb=4.0,
-    fallback_id="openbmb/MiniCPM3-4B",
-    fallback_reason="4B, stronger capability but larger footprint",
-    modal_gpu="T4",
-    modal_memory=8192,
-)
-
-STORY_FALLBACK = ModelConfig(
-    hub_id="openbmb/MiniCPM3-4B",
-    params_b=4.0,
-    license=LicenseType.APACHE_2_0,
-    vram_gb=8.0,
-    is_primary=False,
     modal_gpu="T4",
     modal_memory=8192,
 )
@@ -145,43 +113,6 @@ TTS_MODEL = ModelConfig(
     params_b=2.0,
     license=LicenseType.APACHE_2_0,
     vram_gb=8.0,
-    fallback_id="hexgrad/Kokoro-82M",
-    fallback_reason="82M params, ultra-lightweight, Apache 2.0",
-    modal_gpu="T4",
-    modal_memory=8192,
-)
-
-TTS_FALLBACK_KOKORO = ModelConfig(
-    hub_id="hexgrad/Kokoro-82M",
-    params_b=0.082,
-    license=LicenseType.APACHE_2_0,
-    vram_gb=1.0,
-    is_primary=False,
-    modal_gpu="T4",
-    modal_memory=4096,
-)
-
-TTS_FALLBACK_MELO = ModelConfig(
-    hub_id="myshell-ai/MeloTTS-English-v3",
-    params_b=0.0,  # Unknown exact size
-    license=LicenseType.MIT,
-    vram_gb=1.0,
-    is_primary=False,
-    modal_gpu="CPU",
-    modal_memory=2048,
-)
-
-# ============================================================================
-# TINY MODE MODELS (C4: Edge/Tiny Model Support)
-# ============================================================================
-
-TINY_IMAGE_MODEL = ModelConfig(
-    hub_id="stabilityai/sd-turbo",
-    params_b=0.67,
-    license=LicenseType.APACHE_2_0,
-    vram_gb=4.0,
-    fallback_id="stabilityai/sdxl-turbo",
-    fallback_reason="SDXL-Turbo, higher quality but more VRAM",
     modal_gpu="T4",
     modal_memory=8192,
 )
@@ -443,17 +374,8 @@ def get_model_with_fallback(
     Returns:
         ModelConfig (primary or fallback)
     """
-    if use_fallback and model.fallback_id:
-        logger.info(f"Using fallback: {model.fallback_id} (reason: {model.fallback_reason})")
-        # Return the appropriate fallback config
-        fallback_map = {
-            "black-forest-labs/FLUX.1-schnell": FLUX_FALLBACK,
-            "openbmb/MiniCPM3-4B": STORY_FALLBACK,
-            "hexgrad/Kokoro-82M": TTS_FALLBACK_KOKORO,
-            "myshell-ai/MeloTTS-English-v3": TTS_FALLBACK_MELO,
-        }
-        return fallback_map.get(model.fallback_id, model)
-    
+    # Fallback model configs were removed (the Space links only the 3 primaries);
+    # there is no alternate config to swap in, so always return the primary.
     return model
 
 

@@ -8,11 +8,14 @@ spaces
 diffusers>=0.28
 transformers>=4.40
 accelerate
-peft
 torch
 pillow
 sentencepiece
 opencv-python-headless
+numpy
+
+# Voice narration (VoxCPM2) — was MISSING, so TTS always hit the silent fallback
+voxcpm
 
 # Book building
 fpdf2

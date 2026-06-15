@@ -618,11 +618,6 @@ def create_layout(load_sample_fn=None, create_book_fn=None):
                     value=False,
                     elem_classes=["tiny-toggle"],
                 )
-                tiny_mode = gr.Checkbox(
-                    label="Tiny Mode — faster, runs on small GPUs",
-                    value=False,
-                    elem_classes=["tiny-toggle"],
-                )
                 make_btn = gr.Button(
                     "Make my book!",
                     variant="primary",
@@ -714,7 +709,7 @@ FLUX is the printer. **Tiny Titan.**
         if create_book_fn:
             make_btn.click(
                 fn=create_book_fn,
-                inputs=[doodle, char_name, theme, hero_name, tiny_mode, voice, make_coloring],
+                inputs=[doodle, char_name, theme, hero_name, voice, make_coloring],
                 outputs=[book_display, status, audio_narration, pdf_download,
                          story_info, image_info, trace_info,
                          coloring_display, coloring_pdf_download],
