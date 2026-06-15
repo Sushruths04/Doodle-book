@@ -27,4 +27,3 @@ requests
 huggingface_hub
 soundfile
 librosa>=0.10.0
-gtts

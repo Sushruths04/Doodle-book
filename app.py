@@ -36,7 +36,6 @@ from config import (
     FLUX_MODEL, STORY_MODEL, TTS_MODEL,
     GENERATION_PARAMS, SAMPLE_BOOK_PATH, BASE_SEED, page_seed,
     DEFAULT_VOICE, voice_design,
-    BEDTIME_GENRES, BEDTIME_MOODS,
 )
 from book_builder import (
     build_book_html, export_pdf, magic_loader_html,
@@ -94,27 +93,14 @@ def load_tts():
     if _TTS_MODEL is None:
         from voxcpm import VoxCPM
         logger.info(f"Loading TTS model: {TTS_MODEL.hub_id}")
-        # load_denoiser=True enables voice cloning for the Bedtime Voice tab
+        # load_denoiser=True enables voice cloning (Custom Voice option)
         _TTS_MODEL = VoxCPM.from_pretrained(TTS_MODEL.hub_id, load_denoiser=True)
     return _TTS_MODEL
-
-
-def load_translation():
-    """Load IndicTrans2 translation model (used by Bedtime Voice tab)."""
-    from indic_text import _get_model
-    _get_model()
-
-
-def load_kannada_tts():
-    """Load IndicF5 Kannada TTS model (used by Bedtime Voice tab)."""
-    from indic_tts import _get_model as _kn_get
-    _kn_get()
 
 
 if ON_ZEROGPU:
     for _name, _loader in (
         ("flux", load_flux), ("story", load_story), ("tts", load_tts),
-        ("translation", load_translation), ("kannada_tts", load_kannada_tts),
     ):
         try:
             _loader()
@@ -298,6 +284,110 @@ THEME_TEMPLATES = {
             ("{hero} learned that big skills start with five tiny notes.", "{hero} taking a bow as the crowd claps"),
         ],
     ],
+    "kindness to animals": [
+        [   # arc A: the sparrow with a broken wing
+            ("{hero} found a small sparrow under the garden hedge, one wing folded oddly. The bird looked up with big trusting eyes, and {hero}'s heart squeezed with worry. Very carefully, {hero} scooped the sparrow into both warm palms.", "{hero} kneeling under a garden hedge, gently cupping a small sparrow with a drooping wing"),
+            ("{hero} made the sparrow a cosy nest from a shoebox, a soft scarf, and a little bowl of water. The sparrow settled in slowly, its feathers ruffling then flattening in a sign of calm. {hero} watched over it all afternoon like a tiny doctor.", "{hero} leaning over a shoebox nest watching the sparrow settle in, a small bowl of water beside it"),
+            ("Every morning, {hero} brought the sparrow berries and tiny seeds, counting the days. On the ninth morning, the wing looked different — puffed out and strong. {hero}'s hands trembled as the lid of the box came off.", "{hero} holding open the shoebox in morning light, the sparrow inside looking alert and ready"),
+            ("The sparrow hopped to the edge of the box and blinked. Then it flew — just a short flutter to the window ledge — and {hero} gasped with pure delight. 'You did it!' {hero} whispered.", "{hero} with wide joyful eyes watching the sparrow flutter to a sunlit window ledge"),
+            ("Day by day the sparrow's flights grew longer, until one afternoon it didn't come back. {hero} stood in the garden for a long time, looking at the bright empty sky. The feeling was sad and proud and right all at once.", "{hero} standing alone in the garden, looking up at a bright clear sky"),
+            ("That evening, soft twittering came from the oak tree — the sparrow, singing. {hero} smiled and understood: helping someone doesn't mean keeping them. {hero} had learned that the kindest love lets go.", "{hero} smiling up at a sparrow singing in a golden sunlit oak tree"),
+        ],
+        [   # arc B: the cold kitten
+            ("{hero} heard a tiny mew from under the porch steps on a cold rainy night.", "{hero} kneeling by the porch steps, ear to the ground, listening"),
+            ("A small wet kitten was shivering there, eyes barely open.", "{hero} discovering a tiny shivering kitten under the steps"),
+            ("{hero} wrapped the kitten in an old soft towel and held it very close.", "{hero} cradling a towel-wrapped kitten against their chest in the lamplight"),
+            ("The kitten's trembling slowly stopped — and then it purred for the very first time.", "{hero} feeling the kitten purr, an expression of wonder and happiness"),
+            ("{hero} fed it warm milk from a tiny spoon, drop by drop, all through the night.", "{hero} gently spooning warm milk to the kitten under a lamp"),
+            ("By morning the kitten was playing with {hero}'s shoelace — and life was completely different.", "{hero} and the kitten playing happily in morning sunlight"),
+        ],
+        [   # arc C: the turtle on the path
+            ("In the park behind the houses, {hero} spotted a turtle sitting in the middle of the path.", "{hero} stopping in surprise, spotting a turtle in the centre of a busy path"),
+            ("Cars could come — the turtle was in real danger and didn't know it.", "{hero} looking worried, pointing at the turtle on the path"),
+            ("{hero} knelt down and lifted the turtle very, very slowly and gently.", "{hero} carefully lifting a turtle with both hands, moving very slowly"),
+            ("The turtle tucked its head inside its shell — but then peeked one eye out at {hero}.", "{hero} smiling as the turtle peeks one cautious eye from its shell"),
+            ("{hero} carried it all the way to the pond's edge and set it softly in the reeds.", "{hero} gently lowering the turtle to the water's edge among green reeds"),
+            ("It slid into the water and swam away strong and free. {hero} had learned that every life matters — even a very slow-moving one.", "{hero} watching the turtle swim away into the glinting pond with a proud smile"),
+        ],
+    ],
+    "the magic of imagination": [
+        [   # arc A: the chalk spaceship
+            ("{hero} had a big box of chalk, an empty pavement, and a whole sunny Saturday. {hero} drew a long silver rocket with the word HERO painted on the side in bold yellow letters. Then the strangest thing happened — the chalk rocket shimmered like it was breathing.", "{hero} crouched over a colourful chalk spaceship drawing on the pavement, eyes wide with wonder"),
+            ("{hero} pressed one hand flat on the rocket's hatch — and with a whoooosh that nobody else could hear, {hero} was inside. The walls were silver, the windows were perfectly round, and the stars outside were very, very close. {hero}'s heart pounded with pure happiness.", "{hero} inside a gleaming silver rocket cockpit with round porthole windows full of bright stars"),
+            ("The rocket glided past ringed planets and fizzing green nebulas. {hero} steered with a big joystick and called out every planet's name — and then spotted one nobody had ever named. It glowed pink and had three wobbling moons.", "{hero} at the rocket controls grinning, with ringed planets and a glowing pink unknown planet outside"),
+            ("On the pink planet, everything was made of soft, springy cloud. {hero} jumped and bounced and did a wobbly somersault and landed laughing. Three moon-creatures with gentle faces waved all four of their arms.", "{hero} bouncing joyfully on a cloud surface while three friendly moon-creatures wave"),
+            ("Too soon, the rocket beeped: FUEL LOW. {hero} waved goodbye to the moon-creatures — who waved back with every single arm — and aimed the rocket toward the pale blue dot that was home.", "{hero} waving out the porthole at the moon-creatures as the rocket turns toward a small blue planet"),
+            ("The whoooosh reversed and {hero} was on the pavement again, chalk dust on both knees. The drawing looked ordinary — but {hero} knew imagination isn't in the pavement. It's in whoever holds the chalk.", "{hero} sitting back on the pavement looking at the chalk drawing, smiling with dusty knees"),
+        ],
+        [   # arc B: the painting that moved
+            ("{hero} painted a jungle on a big white paper using every colour in the box.", "{hero} painting an enormous colourful jungle with a big brush, tongue out in concentration"),
+            ("When {hero} looked away and looked back, a painted parrot had definitely moved.", "{hero} staring at the painting with a surprised expression, the parrot in a different spot"),
+            ("{hero} stepped through the paper — the air inside smelled of flowers and warm bark.", "{hero} stepping into a lush painted jungle, eyes wide with wonder"),
+            ("The painted animals talked and played music on instruments made of leaves.", "{hero} dancing with painted animals playing leaf-drums and twig-flutes"),
+            ("The parrot showed {hero} the only way back: a painted door at the edge of the world.", "{hero} and the parrot standing before a bright painted door in the jungle"),
+            ("{hero} stepped through, picked up the brush again, and knew that art is always a door.", "{hero} back in the real world holding the paintbrush, smiling at the painting"),
+        ],
+        [   # arc C: the cardboard kingdom
+            ("{hero} found twelve big cardboard boxes and had an enormous, unstoppable idea.", "{hero} surrounded by cardboard boxes with a huge grin and a marker pen"),
+            ("The boxes became towers, a drawbridge, a throne, and a very impressive cardboard dragon.", "{hero} building an elaborate cardboard castle with towers and a dragon"),
+            ("{hero} was King and General and Chef of the Cardboard Kingdom all at once.", "{hero} wearing a cardboard crown, ruling from a cardboard throne"),
+            ("The cardboard dragon came alive and roared — it needed a brave and worthy friend.", "{hero} facing the cardboard dragon bravely, both looking at each other with interest"),
+            ("{hero} and the dragon ruled fairly together, sharing cookies with every subject.", "{hero} and the dragon handing out cookies to a line of stuffed animals"),
+            ("When the boxes got soggy in the rain, the kingdom lived on — inside {hero}'s mind forever.", "{hero} looking at the damp collapsed boxes with a proud, happy smile"),
+        ],
+    ],
+    "celebrating who you are": [
+        [   # arc A: the one who was different
+            ("In the whole classroom, {hero} did everything differently — coloured outside the lines, loved books more than balls, and always had mud on one shoe. Some days {hero} wished hard to be exactly like everyone else. Most days, though, the mud was the best part.", "{hero} sitting slightly apart at school, colouring enthusiastically outside the lines"),
+            ("One afternoon, the art teacher set a challenge: paint something nobody else could paint. {hero} looked at the blank paper for a quiet moment, then began. The brush moved in swirling loops and a map-like pattern that only {hero} fully understood.", "{hero} painting an enormous swirling colourful map-pattern on a big piece of paper, looking absorbed"),
+            ("When the paintings were displayed, everyone kept stopping at {hero}'s. 'What is it?' they asked. {hero} explained: it was the path home, drawn in the language of memory and feeling. The room went very quiet.", "{hero} standing beside their large painting, with other children gathered around it looking interested"),
+            ("A boy who always seemed perfectly ordinary said, 'Could you teach me?' Nobody had ever asked {hero} to teach anyone anything before. {hero} felt something warm light up behind the ribs.", "{hero} and the boy sitting together with brushes, looking at the colourful painting"),
+            ("From that week on, the classroom had more mud, more unusual loops, and more paintings that asked 'what does this mean?' {hero} kept being exactly the same {hero} — and the whole room had changed around that.", "{hero} in a colourful classroom full of different unusual paintings, everyone comparing their work"),
+            ("{hero} had learned something important: you don't need to change who you are to be the most interesting person in the room. Being exactly, completely, wonderfully yourself is enough — and might be exactly what the world needs.", "{hero} holding up their painting proudly in the school corridor, smiling in afternoon light"),
+        ],
+        [   # arc B: the tallest in class
+            ("{hero} was always in the back row of every class photo — the tallest by far.", "{hero} standing head-and-shoulders above everyone else in a class photo"),
+            ("{hero} bumped on doorways and could never hide in hide-and-seek.", "{hero} ducking through a doorway, knees bent, trying to be smaller"),
+            ("One day the library ladder broke — and only {hero} could reach the top shelf.", "{hero} easily reaching the highest library shelf with one stretched arm"),
+            ("{hero} found the lost book the whole class had been waiting weeks to read.", "{hero} pulling a dusty book from the highest shelf, looking triumphant"),
+            ("Everyone cheered and {hero} laughed — the biggest, loudest laugh in the whole room.", "{hero} laughing with the class, their laugh the biggest of all"),
+            ("{hero} learned that what sometimes feels too much is very often exactly enough.", "{hero} walking tall and proud down the school corridor, head held high"),
+        ],
+        [   # arc C: the quiet one
+            ("In a loud and laughing classroom, {hero} was always quiet — watching, listening, noticing.", "{hero} sitting calmly while a noisy classroom swirls around them"),
+            ("When a strange crackling sound came from the kitchen, only {hero} heard it.", "{hero} looking up sharply, alert, while everyone else stays busy"),
+            ("{hero} quietly told the teacher: 'Something is burning in the kitchen.'", "{hero} raising one calm hand and speaking softly to the teacher"),
+            ("It was just toast — caught quickly because {hero} had been paying attention.", "A teacher pulling smoke-free toast from the toaster, looking relieved"),
+            ("The whole class said: 'Good thing {hero} was listening!'", "The whole class turning to look at {hero} with grateful, impressed faces"),
+            ("{hero} smiled and understood: being quiet is not the same as being invisible. Quiet is its own kind of power.", "{hero} smiling serenely amid a cheerful classroom, feeling completely at home"),
+        ],
+    ],
+    "a rainy day adventure": [
+        [   # arc A: the indoor expedition
+            ("Rain drummed on the windows and {hero}'s big outdoor plans were cancelled. {hero} pressed both palms against the cold glass and watched the street turn into a silver river. The day stretched ahead, long and damp — or so it seemed.", "{hero} pressing hands to a rain-streaked window, watching puddles form outside"),
+            ("Then {hero} had a thought: what if inside was a country nobody had ever properly explored? {hero} pulled on the rain hat and the old adventure boots and declared the hallway the Valley of the Long Rug. The journey had begun.", "{hero} wearing a rain hat and boots at the start of a long hallway, looking determined"),
+            ("The sofa became Mount Cushion — shaky to climb, magnificent from the top. The kitchen table became a cave for thinking. The bookshelf was Shelf-Everest and {hero} read aloud to an imaginary expedition team.", "{hero} sitting triumphantly on top of a pile of sofa cushions, arms raised like a mountain climber"),
+            ("{hero} drew a map as the journey went: squiggly lines, starred locations, important notes like 'biscuit found here' and 'very good echo.' By afternoon the map covered four pages and had a legend with six entries.", "{hero} drawing a large map on multiple sheets of paper spread across the floor"),
+            ("The rain slowed to a drizzle. {hero} stood at the window again and looked out at the wet, sparkling garden. It had been the best day — not despite the rain, but because of it.", "{hero} looking out at a clearing rain-washed garden with a warm, contented smile"),
+            ("{hero} pinned the map to the bedroom wall, where it would stay forever. The Valley of the Long Rug was right there at the top with a red X where the biscuit was found. {hero} had learned: adventure begins wherever you decide it does.", "{hero} pinning a colourful hand-drawn map to the bedroom wall, looking proud"),
+        ],
+        [   # arc B: the puddle scientist
+            ("{hero} wasn't allowed out in the heavy rain — but was allowed to watch through the window.", "{hero} pressing nose to the window glass watching rain fall outside"),
+            ("{hero} got a notebook and began recording every puddle forming on the garden path.", "{hero} sitting by the window sketching puddle shapes in a notebook"),
+            ("When the rain stopped, {hero} raced out with a ruler, a magnifying glass, and big boots.", "{hero} stomping outside in big boots carrying a ruler and magnifying glass"),
+            ("The puddles held entire worlds: a floating leaf, a tiny snail, a rainbow swirl in a patch of oil.", "{hero} kneeling beside a puddle, magnifying glass held over a rainbow reflection"),
+            ("{hero} sketched everything carefully and wrote at the top: 'Rainy Day Study — Field Notes.'", "{hero} writing in the notebook surrounded by puddle sketches and measurements"),
+            ("{hero} learned that science was not far away at all — it was right outside the front door.", "{hero} closing the notebook with satisfaction, boots muddy, face glowing"),
+        ],
+        [   # arc C: the baking storm
+            ("All the cousins were stuck indoors at Grandma's house because of a big thunderstorm.", "A group of children looking out at stormy rain from a cosy kitchen window"),
+            ("Grandma pulled out flour, butter, eggs, and a mysterious tin of something wonderful.", "{hero} and the cousins gathering around Grandma as she opens the baking cupboard"),
+            ("{hero} was made head baker — the only one patient enough to measure carefully.", "{hero} very seriously measuring flour with a large spoon while cousins watch"),
+            ("The kitchen filled with warm smell and accidental flour clouds that made everyone sneeze.", "{hero} and Grandma laughing in a cloud of flour, the bowl half-mixed"),
+            ("By the time the thunder faded, six perfect golden scones sat cooling on the rack.", "{hero} and cousins staring at perfectly golden scones with wide, hungry eyes"),
+            ("Storms, {hero} decided, should probably happen more often. Grandma agreed.", "{hero} and Grandma sharing a warm scone at the kitchen table, rain soft outside"),
+        ],
+    ],
 }
 
 FEW_SHOT_EXEMPLAR = """
@@ -328,19 +418,22 @@ Rules:
 """
 
 
-def build_story_prompt(hero_name: str, theme: str, age: int) -> str:
+def build_story_prompt(hero_name: str, theme: str, age: int,
+                       num_pages: int = 6, story_idea: str = "") -> str:
+    mid = num_pages - 2
+    spark_line = (f"\n- Story spark from the child: {story_idea.strip()}" if story_idea and story_idea.strip() else "")
     return f"""{FEW_SHOT_EXEMPLAR}
 
-Write a 6-page children's storybook for age {age} about {hero_name} with theme: {theme}.
+Write a {num_pages}-page children's storybook for age {age} about {hero_name} with theme: {theme}.
 
 Rules:
 - {hero_name} must appear by name in EVERY page text. Every single page.
-- Keep all characters consistent — do NOT introduce random new characters mid-story.
+- Keep all characters consistent — do NOT introduce random new characters after page 3.
 - Each page: 2–3 vivid, emotionally warm sentences a {age}-year-old can follow and feel.
 - Use sensory details — colours, sounds, textures, emotions — to bring each moment alive.
-- Pages 1–2 introduce {hero_name} and the problem. Pages 3–4 build the challenge. Pages 5–6 resolve it and teach.
-- Page 6 ends with a clear, warm lesson {hero_name} has learned and a feeling of pride or joy.
-- Scene describes exactly what would appear in ONE illustration.
+- Pages 1–2 introduce {hero_name} and the challenge. Pages 3–{mid} deepen the adventure. Pages {mid+1}–{num_pages} resolve it and teach.
+- Page {num_pages} ends with a clear, warm lesson {hero_name} has learned and a feeling of pride or joy.
+- Scene describes exactly what would appear in ONE illustration.{spark_line}
 - Return ONLY valid JSON (no explanation, no markdown fences):
 """
 
@@ -380,9 +473,9 @@ def parse_story_json(raw_output: str) -> dict | None:
     return None
 
 
-def _normalize_story(story: dict) -> dict:
-    pages = list(story.get("pages", []))[:6]
-    while len(pages) < 6:
+def _normalize_story(story: dict, num_pages: int = 6) -> dict:
+    pages = list(story.get("pages", []))[:num_pages]
+    while len(pages) < num_pages:
         pages.append({
             "page": len(pages) + 1,
             "text": "And the adventure continued happily.",
@@ -489,11 +582,12 @@ def load_sample_book() -> str:
 # ============================================================================
 
 @spaces.GPU(duration=90)
-def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
+def generate_story_gpu(hero_name: str, theme: str, age: int = 5,
+                       num_pages: int = 6, story_idea: str = "") -> dict:
     """Generate a story on ZeroGPU, falling back to a deterministic local story."""
     try:
         model, tok = load_story()
-        prompt = build_story_prompt(hero_name, theme, age)
+        prompt = build_story_prompt(hero_name, theme, age, num_pages, story_idea)
         inputs = tok.apply_chat_template(
             [{"role": "user", "content": prompt}],
             add_generation_prompt=True,
@@ -504,7 +598,7 @@ def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
         with torch.no_grad():
             out = model.generate(
                 **inputs,
-                max_new_tokens=1200,
+                max_new_tokens=200 * num_pages,
                 do_sample=True,
                 temperature=0.85,
                 top_p=0.92,
@@ -516,14 +610,14 @@ def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
         )
         parsed = parse_story_json(response)
         if parsed:
-            return _normalize_story(parsed)
+            return _normalize_story(parsed, num_pages)
         logger.warning("Story parser failed; using random-arc local fallback")
     except Exception as e:
         logger.warning(f"ZeroGPU story generation failed: {e}")
-    return _normalize_story(build_story_locally(hero_name, theme))
+    return _normalize_story(build_story_locally(hero_name, theme), num_pages)
 
 
-@spaces.GPU(duration=150)
+@spaces.GPU(duration=200)
 def generate_images_gpu(
     character_desc: str,
     scenes: list,
@@ -598,45 +692,48 @@ def generate_coloring_images_gpu(color_pngs: list, seed: int = 7) -> list:
     return outs
 
 
-@spaces.GPU(duration=120)
-def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
-    """Narrate the book with VoxCPM2. Raises on failure so the caller can show
-    the real reason instead of silently shipping a silent clip."""
+@spaces.GPU(duration=180)
+def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE,
+                     ref_wav: str | None = None) -> bytes:
+    """Narrate the book with VoxCPM2.
+    When voice=='my_voice' and ref_wav is provided, clones the caller's voice.
+    Raises on failure so the caller can surface the real reason."""
     import io
     import numpy as np
 
     try:
         model = load_tts()
         design = voice_design(voice)
+        is_cloned = (voice == "my_voice"
+                     and bool(ref_wav and os.path.exists(str(ref_wav))))
 
-        import re
         chunks = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
         if not chunks:
             chunks = [text.strip() or "The end."]
-        
+        if is_cloned:
+            chunks = chunks[:15]  # voice cloning ~6-8s/sentence; cap for 180s budget
+
         sr = model.tts_model.sample_rate
         pause = np.zeros(int(sr * 0.35), dtype=np.float32)
         pieces = []
-        
+
         for i, sentence in enumerate(chunks):
-            wav = model.generate(
-                text=f"{design} {sentence}",
-                cfg_value=2.0,
-                inference_timesteps=10,
-            )
+            kw = dict(text=f"{design} {sentence}",
+                      cfg_value=2.0, inference_timesteps=10)
+            if is_cloned:
+                kw["reference_wav_path"] = ref_wav
+            wav = model.generate(**kw)
             pieces.append(np.asarray(wav, dtype=np.float32))
             if i < len(chunks) - 1:
                 pieces.append(pause)
-        
+
         audio = np.concatenate(pieces)
         import soundfile as sf
         buf = io.BytesIO()
         sf.write(buf, audio, sr, format="WAV")
         return buf.getvalue()
-    
-    except Exception as e:
-        # Surface the real reason (e.g. missing model) instead of a silent clip
-        # that looks like it worked. create_book records this in the trace.
+
+    except Exception:
         logger.exception("TTS failed")
         raise
 
@@ -645,18 +742,22 @@ def generate_tts_gpu(text: str, voice: str = DEFAULT_VOICE) -> bytes:
 # MAIN BOOK CREATION (Generator for streaming)
 # ============================================================================
 
-def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VOICE, make_coloring=False):
+def create_book(doodle_image, character_name, theme, hero_name,
+                voice=DEFAULT_VOICE, make_coloring=False,
+                num_pages=6, story_idea=None, custom_voice_wav=None):
     """ZeroGPU book flow: story → images → narration → PDFs → coloring book,
     each a sequential @spaces.GPU call (ZeroGPU has one GPU per request)."""
     t_total = time.perf_counter()
     character_name = (character_name or "").strip() or "Little Hero"
     hero_name = (hero_name or "").strip() or character_name
+    num_pages = max(6, min(10, int(num_pages or 6)))
 
     trace_data = {
         "backend": "zerogpu",
         "hero_name": hero_name,
         "theme": theme,
         "voice": voice,
+        "num_pages": num_pages,
         "make_coloring": make_coloring,
         "seed": BASE_SEED,
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -676,7 +777,8 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
 
     t_story = time.perf_counter()
     try:
-        story = generate_story_gpu(hero_name, theme)
+        story = generate_story_gpu(hero_name, theme, num_pages=num_pages,
+                                   story_idea=story_idea or "")
     except Exception as e:
         logger.error(f"Story generation failed: {e}")
         yield (
@@ -724,7 +826,10 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
 
     def _do_voice():
         try:
-            voice_box["bytes"] = generate_tts_gpu(full_text, voice)
+            voice_box["bytes"] = generate_tts_gpu(
+                full_text, voice,
+                ref_wav=custom_voice_wav if voice == "my_voice" else None,
+            )
         except Exception as e:
             voice_box["err"] = e
 
@@ -875,406 +980,10 @@ def create_book(doodle_image, character_name, theme, hero_name, voice=DEFAULT_VO
     )
 
 
-# ============================================================================
-# BEDTIME VOICE TAB
-# ============================================================================
-
-BEDTIME_TEMPLATES = {
-    "Animals": [
-        [   # arc A: the lost firefly
-            ("{hero} loved sitting in the garden when the moon came out.", "{hero} sitting quietly in a moonlit garden"),
-            ("One night, {hero} heard a tiny buzzing near the lavender.", "{hero} tilting head to listen near purple flowers"),
-            ("A little firefly was lost and couldn't find its family.", "{hero} meeting a tiny glowing firefly in the dark"),
-            ("{hero} walked gently through the dark, and the firefly lit the way.", "{hero} walking softly with the firefly glowing beside"),
-            ("They found the firefly's home, glowing warm and bright.", "{hero} smiling as the firefly reunites with glowing family"),
-            ("{hero} yawned and curled up under the stars, at peace.", "{hero} sleeping peacefully in the moonlit garden"),
-        ],
-        [   # arc B: the sleepy hedgehog
-            ("{hero} found a little hedgehog shivering under a leaf.", "{hero} gently lifting a leaf to find a tiny hedgehog"),
-            ("The hedgehog had lost the path to its cosy winter burrow.", "{hero} and the hedgehog looking at the dark forest together"),
-            ("{hero} made a tiny lantern from a jar and a candle stub.", "{hero} carefully lighting a small lantern in the dark"),
-            ("Together {hero} and the hedgehog followed the lantern glow.", "{hero} leading the hedgehog along a moonlit path"),
-            ("They found the burrow, soft with dry leaves and moss.", "{hero} watching the hedgehog snuggle into its warm home"),
-            ("{hero} blew out the lantern and tiptoed home to bed.", "{hero} tiptoeing home under a glowing moon"),
-        ],
-        [   # arc C: the lonely cloud sheep
-            ("High above, a small cloud shaped like a sheep drifted away.", "{hero} watching a fluffy cloud drift across the night sky"),
-            ("{hero} watched it wander further from the other clouds.", "{hero} looking up concerned at the lone cloud-sheep"),
-            ("{hero} called out softly — 'Come back, little cloud!'", "{hero} cupping hands around mouth and calling up at the sky"),
-            ("A gentle breeze carried {hero}'s voice right up to the cloud.", "{hero} smiling as the cloud slowly turns around"),
-            ("The little cloud floated back to its soft, woolly family.", "{hero} watching all the clouds nuzzle together"),
-            ("{hero} closed their eyes and drifted to sleep like a cloud.", "{hero} sleeping peacefully, face soft and calm"),
-        ],
-    ],
-    "Dragons": [
-        [   # arc A: the dragon with no flame
-            ("{hero} lived near a mountain where a gentle dragon slept each night.", "{hero} looking up at a misty mountain in moonlight"),
-            ("One evening, the dragon sneezed and lost its tiny flame.", "{hero} watching the dragon sneeze sadly"),
-            ("{hero} brought the dragon warm soup and a thick blanket.", "{hero} carrying a steaming bowl to a sad-looking dragon"),
-            ("The dragon sipped the soup and felt a warm glow return.", "{hero} and the dragon sharing a cosy quiet moment"),
-            ("Together they lit the lanterns along the sleepy village path.", "{hero} and the dragon lighting lanterns in the still village"),
-            ("The dragon curled up small and {hero} tucked it in gently.", "{hero} tucking a sleepy dragon in with a smile"),
-        ],
-        [   # arc B: the dragon's lullaby
-            ("{hero} heard a sad humming sound coming from the cave on the hill.", "{hero} listening to a distant humming sound at night"),
-            ("Inside was a young dragon who couldn't fall asleep.", "{hero} finding a wide-awake baby dragon in a cosy cave"),
-            ("{hero} sat beside the dragon and hummed a soft tune.", "{hero} humming quietly with eyes half-closed"),
-            ("The dragon's eyes grew heavy and its tail curled up.", "{hero} watching the dragon's eyes slowly droop"),
-            ("{hero} sang the last line very, very softly.", "{hero} singing barely above a whisper to the drowsy dragon"),
-            ("They both fell asleep together in the warm cave.", "{hero} and the dragon sleeping side by side in the cave"),
-        ],
-        [   # arc C: the dragon who was afraid of the dark
-            ("A tiny dragon named Ember sat shaking outside its cave.", "{hero} finding a tiny trembling dragon at a cave entrance"),
-            ("{hero} saw that Ember was scared of the dark inside.", "{hero} kneeling beside the little dragon with a kind look"),
-            ("{hero} reached in and found a pile of smooth glowing stones.", "{hero} pulling out a handful of faintly glowing stones"),
-            ("Placed around the cave, they made it warm and beautiful.", "{hero} and Ember arranging glowing stones around the cave"),
-            ("Ember stepped inside, eyes wide with wonder.", "Ember the dragon stepping in slowly, amazed by the glow"),
-            ("{hero} waved goodnight as Ember curled up happy.", "{hero} waving at a cosy, sleepy Ember in the glowing cave"),
-        ],
-    ],
-    "Ocean": [
-        [   # arc A: the shell home
-            ("{hero} sat by the moonlit shore listening to the waves.", "{hero} sitting on the sand under a big silver moon"),
-            ("A little fish splashed up, its eyes wide and worried.", "{hero} seeing a small worried fish near the surface"),
-            ("A big wave had carried the fish's shell-home away.", "{hero} listening to the little fish with a gentle face"),
-            ("{hero} waded in gently and searched along the sandy floor.", "{hero} swimming softly along the moonlit ocean floor"),
-            ("There — half-buried — was the shell, pearly and perfect.", "{hero} finding a beautiful shell in the soft sand"),
-            ("{hero} set the shell back, and the sea turned calm.", "{hero} watching the fish swim happily into its shell home"),
-        ],
-        [   # arc B: the singing whale
-            ("{hero} heard a low, slow song drifting in from the sea.", "{hero} pressing ear to the cold night water listening"),
-            ("A whale was singing far away, all alone.", "{hero} imagining a large gentle whale singing in dark water"),
-            ("{hero} hummed back — a gentle, rising reply.", "{hero} sitting on a rock humming toward the ocean"),
-            ("The whale's song grew louder, warmer, closer.", "{hero} listening with eyes closed as the whale answers"),
-            ("Soon the whale found its pod, their songs weaving together.", "{hero} smiling at the sight of whales swimming together"),
-            ("{hero} fell asleep to the sound of the ocean choir.", "{hero} curled up on the soft sand, sleeping peacefully"),
-        ],
-        [   # arc C: the moonbeam path
-            ("{hero} wished the sea would show a safe path for the little boats.", "{hero} looking out at tiny boats bobbing in dark water"),
-            ("The moon heard and sent a silver path across the waves.", "{hero} watching a bright path of moonlight appear on the sea"),
-            ("Each little boat followed it safely into the harbour.", "{hero} smiling as boats glide along the moonbeam path"),
-            ("{hero} stood on the dock waving each boat home.", "{hero} waving warmly as boats arrive one by one"),
-            ("The last captain tossed {hero} a tiny glowing pearl.", "{hero} catching a small glowing pearl with cupped hands"),
-            ("{hero} held the pearl close and drifted off to sleep.", "{hero} lying in bed, pearl glowing softly on the pillow"),
-        ],
-    ],
-    "Forest": [
-        [   # arc A: the silent owl
-            ("{hero} walked into the whispering forest as the moon rose.", "{hero} stepping onto a silver moonlit forest path"),
-            ("The trees were worried — a wise old owl had lost its song.", "{hero} hearing the trees murmur about the silent owl"),
-            ("{hero} climbed a mossy rock and hummed a gentle tune.", "{hero} humming softly on a mossy rock under the moon"),
-            ("The owl tilted its head and slowly remembered the melody.", "{hero} watching the owl's eyes glow as memory returns"),
-            ("The whole forest filled with soft nighttime music.", "{hero} smiling as the forest glows with peaceful sound"),
-            ("{hero} yawned and drifted off to sleep among the roots.", "{hero} sleeping peacefully at the base of a great tree"),
-        ],
-        [   # arc B: the sleeping seeds
-            ("{hero} found that the forest was very quiet — too quiet.", "{hero} walking slowly through an unusually still forest"),
-            ("The seeds underground had forgotten when to sprout.", "{hero} pressing an ear to the ground and listening"),
-            ("{hero} sang a slow, low song about rain and warm sun.", "{hero} kneeling by the earth singing very quietly"),
-            ("Tiny green shoots appeared one by one between the roots.", "{hero} watching small green shoots push up through the soil"),
-            ("The whole floor sparkled with new leaves catching the moonlight.", "{hero} smiling at a carpet of tiny silver-green leaves"),
-            ("{hero} curled up between the roots, lullabied by the trees.", "{hero} sleeping among the roots as leaves drift down"),
-        ],
-        [   # arc C: the fox's lost path
-            ("{hero} met a small fox who had wandered very far from home.", "{hero} meeting a tired little fox sitting on a log"),
-            ("The fox didn't know which stars pointed north.", "{hero} and the fox both looking up at the starry sky"),
-            ("{hero} remembered — the Great Bear always faces north.", "{hero} pointing at a constellation with a sure hand"),
-            ("Together they followed the stars through the quiet trees.", "{hero} and the fox walking side by side in moonlight"),
-            ("At last the fox saw its familiar hill and bounded up.", "{hero} watching the fox race joyfully up the hill"),
-            ("{hero} turned home too, heart warm and full.", "{hero} walking home alone under the bright stars, smiling"),
-        ],
-    ],
-    "Space": [
-        [   # arc A: the falling star
-            ("{hero} loved counting stars from the garden every night.", "{hero} lying in the grass gazing at the starry sky"),
-            ("One night, one star blinked — and tumbled down!", "{hero} gasping as a little star falls from the sky"),
-            ("{hero} caught the star gently in a jar of moonlight.", "{hero} holding up a glowing jar with wide, careful hands"),
-            ("The little star whispered it was lost and didn't know home.", "{hero} listening closely to a tiny voice from the jar"),
-            ("{hero} climbed the tallest hill and opened the jar wide.", "{hero} on a hilltop, jar open, star ready to fly"),
-            ("The star zoomed home, and {hero} fell fast asleep smiling.", "{hero} smiling and drifting to sleep under the stars"),
-        ],
-        [   # arc B: the moon's blanket
-            ("The moon shivered — it had lost its soft cloud blanket.", "{hero} looking up at a pale, shivering moon"),
-            ("{hero} gathered the fluffiest clouds and knitted them together.", "{hero} floating and knitting clouds with silver thread"),
-            ("It took all night but the blanket grew soft and wide.", "{hero} holding up a huge fluffy white cloud blanket"),
-            ("{hero} floated up and draped it gently over the moon.", "{hero} tucking the cloud blanket around a grateful moon"),
-            ("The moon glowed warmer, and stars winked their thanks.", "{hero} floating back down as stars twinkle brightly"),
-            ("{hero} landed home just in time for bed.", "{hero} tiptoeing inside under a calm, warm, bright moon"),
-        ],
-        [   # arc C: the astronaut bear
-            ("{hero} met a small bear in a silver space suit near the rocket.", "{hero} waving at a small bear in a tiny astronaut suit"),
-            ("The bear had come from a planet made entirely of honey.", "{hero} listening with eyes wide to the bear's story"),
-            ("{hero} and the bear sat under the stars sharing honey cakes.", "{hero} and the bear sharing food under a huge starry sky"),
-            ("The bear grew sleepy and asked how Earth children go to sleep.", "{hero} showing the bear how to close eyes slowly"),
-            ("{hero} tucked the bear in inside the rocket pod.", "{hero} draping a blanket over the sleepy bear in the rocket"),
-            ("{hero} waved as the rocket floated off towards the honey planet.", "{hero} waving at the rocket rising into the starry sky"),
-        ],
-    ],
-    "Kingdom": [
-        [   # arc A: the mouse and the crown
-            ("In a cosy kingdom, {hero} was the kindest helper of all.", "{hero} standing cheerfully in a tiny fairy-tale village"),
-            ("One sleepy evening, the king's golden crown had gone missing.", "{hero} seeing the king looking worried and bare-headed"),
-            ("{hero} searched the royal garden softly by moonlight.", "{hero} tiptoeing through a moonlit garden"),
-            ("A sleepy mouse had borrowed it for a bed!", "{hero} discovering a tiny mouse snoozing inside the crown"),
-            ("{hero} found the mouse a proper bed of rose petals.", "{hero} carefully tucking the mouse into a petal bed"),
-            ("The king smiled, and the whole kingdom slept in peace.", "{hero} and the king smiling under the quiet night sky"),
-        ],
-        [   # arc B: the baker's lost song
-            ("The royal baker had forgotten the lullaby that made magic bread.", "{hero} finding the baker staring sadly at empty dough"),
-            ("Without the song the bread wouldn't rise — and no breakfast!", "{hero} and the baker looking at flat, sad dough together"),
-            ("{hero} sat quietly and hummed a slow, warm melody.", "{hero} sitting on a stool humming softly to the dough"),
-            ("The dough trembled, puffed up, and filled the kitchen with warmth.", "{hero} watching the dough rise with wide delighted eyes"),
-            ("By midnight, golden loaves lined every shelf in the kitchen.", "{hero} and the baker admiring rows of perfect golden loaves"),
-            ("{hero} and the baker shared a tiny warm crust before sleep.", "{hero} and the baker smiling over a piece of warm bread"),
-        ],
-        [   # arc C: the princess who couldn't sleep
-            ("The little princess had tried everything — she could not sleep.", "{hero} finding a princess sitting up wide-eyed in a big bed"),
-            ("{hero} asked, 'Have you looked at the stars tonight, princess?'", "{hero} pointing to a window filled with stars"),
-            ("They counted stars together, one by one.", "{hero} and the princess counting stars from the window"),
-            ("After twelve stars the princess's eyes began to droop.", "{hero} smiling as the princess's head starts to nod"),
-            ("{hero} pulled the curtain half-closed, leaving just a sliver of moonlight.", "{hero} quietly closing a curtain leaving a thin beam of moon"),
-            ("The princess was asleep before {hero} could tiptoe away.", "{hero} tiptoeing out with a warm smile"),
-        ],
-    ],
-}
-
-BEDTIME_FEW_SHOT = """
-Write a 6-page children's bedtime story for age 5 about Mia the bunny. Genre: Forest. Mood: Dreamy.
-
-Rules:
-- Mia must appear by name in EVERY page text.
-- Use calm, slow, sleepy language — gentle sentences that feel like a lullaby.
-- Each page is 2–3 soft, unhurried sentences. No excitement; only warmth and peace.
-- Use soothing sensory details: soft moonlight, warm moss, quiet sounds, slow breathing.
-- Page 6 ends with Mia (or the child) drifting peacefully to sleep.
-- Scene describes exactly what appears in one illustration.
-- Return ONLY valid JSON (no markdown fences, no extra text).
-
-{
-  "title": "Mia and the Owl's Lullaby",
-  "character_description": "A tiny white bunny named Mia with long soft ears, a pink nose, and a star-shaped patch on her back",
-  "pages": [
-    {"page": 1, "text": "As the sun dipped below the trees, Mia the bunny padded softly into the forest where everything was turning gold and purple. The air smelled of pine needles and cool evening dew. Mia's little paws made no sound at all on the mossy path.", "scene": "Mia the white bunny walking gently along a golden-purple evening forest path covered in soft moss"},
-    {"page": 2, "text": "The forest grew very still, as if the whole world was taking a long, slow breath. Even the leaves stopped rustling, and the stream became barely a whisper. Mia sat down and listened to the quiet.", "scene": "Mia the white bunny sitting very still on a mossy log, eyes half-closed, surrounded by a calm twilight forest"},
-    {"page": 3, "text": "Then, from somewhere high in the old oak tree, Mia heard the softest sound — an owl, humming a gentle tune. The notes floated down through the branches like feathers. Mia tilted her ears upward and smiled.", "scene": "Mia the white bunny looking up at a sleepy owl perched on a moonlit oak branch above"},
-    {"page": 4, "text": "The owl's song was slow and low, like warm honey poured into a cup. With every note, Mia felt her shoulders soften and her eyes grow heavier. The whole forest seemed to hum along.", "scene": "The old owl humming with eyes half-shut, Mia the bunny below resting her cheek on her paws listening"},
-    {"page": 5, "text": "Mia found a bed of the softest green moss she had ever touched, and curled herself into a tiny ball. Her breathing slowed, and the owl's song wrapped around her like a blanket. Everything felt very safe and very warm.", "scene": "Mia the white bunny curled in a tiny ball on thick green moss, eyes almost closed, moonlight filtering through the trees"},
-    {"page": 6, "text": "The owl sang on and on, and Mia drifted into the most peaceful dream. Her pink nose twitched once, then was still. Somewhere above, a single star blinked goodnight.", "scene": "Mia the white bunny fast asleep on moonlit moss, a single star glowing above the peaceful forest"}
-  ]
-}
-"""
-
-
-def _build_bedtime_locally(hero_name: str, genre: str) -> dict:
-    hero = (hero_name or "Little One").strip() or "Little One"
-    arcs = BEDTIME_TEMPLATES.get(genre, BEDTIME_TEMPLATES["Animals"])
-    beats = _random.choice(arcs)  # pick a random arc variant for variety
-    pages = [
-        {"page": i + 1, "text": t.format(hero=hero), "scene": s.format(hero=hero)}
-        for i, (t, s) in enumerate(beats)
-    ]
-    return {
-        "title": f"{hero}'s Bedtime Dream",
-        "character_description": f"{hero}, a gentle, friendly storybook character with soft colours",
-        "pages": pages,
-    }
-
-
-def build_bedtime_html(title: str, pages: list) -> str:
-    pages_html = "".join(
-        f'<p class="bedtime-page">{p.get("text", "")}</p>'
-        for p in pages
-    )
-    return (
-        '<div class="bedtime-story">'
-        f'<h2 class="bedtime-title">🌙 {title}</h2>'
-        f'{pages_html}'
-        '</div>'
-    )
-
-
-@spaces.GPU(duration=90)
-def generate_bedtime_story_gpu(hero_name: str, genre: str, mood: str) -> dict:
-    """Generate a gentle bedtime story with MiniCPM5-1B."""
-    try:
-        model, tok = load_story()
-        prompt = (
-            f"{BEDTIME_FEW_SHOT}\n\n"
-            f"Write a 6-page children's bedtime story for age 5 about {hero_name}. "
-            f"Genre: {genre}. Mood: {mood}.\n\n"
-            f"Rules:\n"
-            f"- {hero_name} must appear by name in EVERY page text.\n"
-            f"- Use calm, slow, sleepy language — each page should feel like a lullaby.\n"
-            f"- Each page: 2–3 soft, unhurried sentences. No excitement; only warmth and peace.\n"
-            f"- Include gentle sensory details: soft moonlight, quiet sounds, warm textures.\n"
-            f"- Page 6 must end with {hero_name} or the child drifting peacefully asleep.\n"
-            f"- Do NOT introduce random unrelated characters.\n"
-            f"- Return ONLY valid JSON:\n"
-        )
-        inputs = tok.apply_chat_template(
-            [{"role": "user", "content": prompt}],
-            add_generation_prompt=True,
-            enable_thinking=False,
-            return_dict=True,
-            return_tensors="pt",
-        ).to("cuda")
-        with torch.no_grad():
-            out = model.generate(
-                **inputs, max_new_tokens=1200,
-                do_sample=True, temperature=0.85, top_p=0.92, repetition_penalty=1.1,
-            )
-        response = tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
-        parsed = parse_story_json(response)
-        if parsed:
-            return _normalize_story(parsed)
-        logger.warning("Bedtime story parser failed; using local fallback")
-    except Exception as e:
-        logger.warning(f"Bedtime story GPU failed: {e}")
-    return _normalize_story(_build_bedtime_locally(hero_name, genre))
-
-
-@spaces.GPU(duration=180)
-def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming") -> str:
-    """VoxCPM2 bedtime narration — clones user's voice if ref_wav provided,
-    otherwise uses Storyteller voice preset. Returns a temp WAV file path."""
-    import re as _re
-    import numpy as np
-    import soundfile as sf
-
-    model = load_tts()
-    sr    = int(model.tts_model.sample_rate)
-
-    mood_styles = {
-        "calming": "very slow, deep warm whisper, gentle bedtime voice, barely above a breath",
-        "dreamy":  "slow, soft, breathy whisper, lullaby-like rhythm, words dissolving into silence",
-        "magical": "gentle, warm, wonder-filled, soft rising intonation on wonder words",
-        "cozy":    "warm, comfortable storytelling voice, like reading to a child tucked in bed",
-    }
-    style = mood_styles.get(mood.lower(), "gentle, warm, sleepy bedtime voice, slightly slow")
-
-    sentences = [s.strip() for s in _re.split(r"(?<=[.!?])\s+", text) if s.strip()]
-    if not sentences:
-        sentences = [text.strip() or "Sweet dreams."]
-
-    has_ref = bool(ref_wav and os.path.exists(str(ref_wav)))
-    # Voice cloning ~5-8s/sentence; 15 sentences ≈ 75-120s, well within 180s budget
-    if has_ref:
-        sentences = sentences[:15]
-
-    silence = np.zeros(int(0.65 * sr), dtype=np.float32)
-    pieces  = []
-
-    for sentence in sentences:
-        kw = dict(text=f"({style}) {sentence}", cfg_value=2.0, inference_timesteps=10)
-        if has_ref:
-            kw["reference_wav_path"] = ref_wav
-        wav = model.generate(**kw)
-        wav = np.asarray(wav, dtype=np.float32)
-        if wav.size:
-            pieces.append(wav)
-            pieces.append(silence)
-
-    if not pieces:
-        raise RuntimeError("VoxCPM2 produced no audio.")
-
-    full = np.concatenate(pieces)
-    peak = float(np.max(np.abs(full)))
-    if peak > 0:
-        full = full / peak * 0.92
-
-    fd, path = tempfile.mkstemp(prefix="bedtime_en_", suffix=".wav")
-    os.close(fd)
-    sf.write(path, full, sr)
-    return path
-
-
-@spaces.GPU(duration=240)
-def generate_kannada_gpu(text: str, ref_wav: str, mood: str = "calming") -> str:
-    """Translate English story to Kannada (NLLB-200) and narrate via IndicF5/MMS-TTS-Kan.
-    ref_wav is accepted for voice cloning when IndicF5 is available.
-    Returns a WAV file path."""
-    if not ref_wav or not os.path.exists(str(ref_wav)):
-        raise ValueError("Voice clip required to enable Kannada narration.")
-    from indic_text import translate_to_kannada
-    from indic_tts import narrate_kannada, _use_indic, _mms_model
-    logger.info(f"Kannada: start. indic={_use_indic}, mms_loaded={_mms_model is not None}")
-    try:
-        kn_text = translate_to_kannada(text)
-    except Exception as te:
-        raise RuntimeError(f"Translation failed: {te}") from te
-    logger.info(f"Kannada: translated {len(kn_text)} chars → {kn_text[:80]!r}")
-    try:
-        path = narrate_kannada(ref_wav, "", kn_text, mood, 0.45)
-    except Exception as te:
-        raise RuntimeError(f"Kannada TTS failed: {te}") from te
-    logger.info(f"Kannada: done → {path}")
-    return path
-
-
-def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):
-    """Bedtime Voice flow: story → English cloned narration → Kannada narration."""
-    t0        = time.perf_counter()
-    hero_name = (hero_name or "").strip() or "Little One"
-    mood      = (bedtime_mood or "calming").lower()
-
-    yield (
-        '<div class="bedtime-empty">'
-        '<span class="moon-icon">🌙</span>'
-        '<p class="big">Writing your bedtime story…</p>'
-        '</div>',
-        "Writing your bedtime story…",
-        None, None,
-    )
-
-    story      = generate_bedtime_story_gpu(hero_name, bedtime_genre, bedtime_mood)
-    pages      = story.get("pages", [])
-    title      = story.get("title", "A Bedtime Story")
-    page_texts = [p.get("text", "") for p in pages]
-    full_text  = f"{title}. {' '.join(page_texts)}"
-    # Condensed text for Kannada: title + first 3 pages keeps translation+TTS within GPU budget
-    kn_source  = f"{title}. {' '.join(page_texts[:3])}" if page_texts else full_text
-    story_html = build_bedtime_html(title, pages)
-
-    yield (story_html, f"{title} — recording English narration…", None, None)
-
-    en_audio_path = None
-    try:
-        en_audio_path = generate_tts_cloned_gpu(full_text, ref_audio, mood)
-    except Exception as e:
-        logger.warning(f"English TTS failed: {e}")
-
-    kn_note = "translating to Kannada…" if ref_audio else "record your voice for Kannada narration"
-    yield (story_html, f"{title} — {kn_note}", en_audio_path, None)
-
-    kn_audio_path = None
-    kn_error      = None
-    if ref_audio:
-        try:
-            kn_audio_path = generate_kannada_gpu(kn_source, ref_audio, mood)
-        except Exception as e:
-            kn_error = str(e)
-            logger.warning(f"Kannada TTS failed: {e}")
-
-    total    = round(time.perf_counter() - t0, 2)
-    done_msg = f"Done: {title} · {total}s"
-    if ref_audio and not kn_audio_path:
-        short_err = (kn_error or "unknown error")[:80]
-        done_msg += f"  · Kannada failed: {short_err}"
-    elif not ref_audio:
-        done_msg += "  · record your voice to get Kannada narration"
-
-    yield (story_html, done_msg, en_audio_path, kn_audio_path)
-
-
-# ============================================================================
-# MAIN
-# ============================================================================
-
 if __name__ == "__main__":
     demo = create_layout(
         load_sample_fn=load_sample_book,
         create_book_fn=create_book,
-        create_bedtime_fn=create_bedtime,
     )
     demo.queue(default_concurrency_limit=2, max_size=8)
     # design_kwargs (theme/css/js/head) is non-empty on gradio 6 (moved to launch)

@@ -117,29 +117,6 @@ TTS_MODEL = ModelConfig(
     modal_memory=8192,
 )
 
-# ── Bedtime Voice tab models ────────────────────────────────────────────────
-
-TRANSLATION_MODEL = ModelConfig(
-    hub_id="facebook/nllb-200-distilled-600M",
-    params_b=0.6,
-    license=LicenseType.MIT,
-    vram_gb=2.5,
-    modal_gpu="T4",
-    modal_memory=8192,
-)
-
-KANNADA_TTS_MODEL = ModelConfig(
-    hub_id="sush0401/IndicF5-Kannada-Bedtime-v2",
-    params_b=0.5,
-    license=LicenseType.APACHE_2_0,
-    vram_gb=2.0,
-    modal_gpu="T4",
-    modal_memory=8192,
-)
-
-BEDTIME_GENRES: list = ["Animals", "Dragons", "Ocean", "Forest", "Space", "Kingdom"]
-BEDTIME_MOODS:  list = ["Calming", "Dreamy", "Magical", "Cozy"]
-
 
 # ============================================================================
 # VOICE PRESETS (VoxCPM2 "voice design")
@@ -180,6 +157,11 @@ VOICE_PRESETS: Dict[str, Dict[str, str]] = {
         "label": "👴 Grandpa",
         "design": "(A kind, gentle old grandfather telling a cozy bedtime story, "
                   "warm, slow, soothing)",
+    },
+    "my_voice": {
+        "label": "🎙️ My Voice",
+        "design": "(warm, gentle, natural storytelling voice, reading clearly to a child, "
+                  "friendly and expressive)",
     },
 }
 

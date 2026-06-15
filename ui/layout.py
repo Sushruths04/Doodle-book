@@ -1,13 +1,12 @@
 """
-UI layout — DoodleBook with two tabs: Storybook + Bedtime Voice.
+DoodleBook — single-tab Storybook UI.
 
-Storybook tab: construction-paper scrapbook (unchanged aesthetic).
-Bedtime Voice tab: moonlit night-sky palette, voice cloning, English + Kannada audio.
-Both tabs share the same fonts, header, and footer.
+Construction-paper scrapbook aesthetic: Gaegu/Caveat fonts, paper textures,
+hand-drawn SVG frames, floating crayon sparkles. Fully custom — zero Gradio defaults.
 """
 
 import gradio as gr
-from config import VOICE_CHOICES, DEFAULT_VOICE, BEDTIME_GENRES, BEDTIME_MOODS
+from config import VOICE_CHOICES, DEFAULT_VOICE
 
 THEMES = [
     "brave adventure",
@@ -16,6 +15,10 @@ THEMES = [
     "helping someone",
     "lost and found",
     "learning something new",
+    "kindness to animals",
+    "the magic of imagination",
+    "celebrating who you are",
+    "a rainy day adventure",
 ]
 
 HEAD = """
@@ -43,7 +46,7 @@ SVG_DEFS = """
 
 CSS = r"""
 /* ============================================================================
-   DOODLEBOOK — CONSTRUCTION-PAPER SCRAPBOOK + BEDTIME VOICE
+   DOODLEBOOK — CONSTRUCTION-PAPER SCRAPBOOK
    ============================================================================ */
 
 :root {
@@ -58,16 +61,6 @@ CSS = r"""
   --crayon-sky:    #4a9fd6;
   --crayon-leaf:   #74b85a;
   --tape:       rgba(244, 198, 74, 0.55);
-  /* Bedtime palette — twilight lavender (readable on light body bg) */
-  --twi:        #ece4ff;
-  --twi-2:      #dfd6f8;
-  --twi-deep:   #f5f2ff;
-  --moon:       #c8a83c;
-  --moon-glow:  #e8c84a;
-  --indigo-ink: #1a1060;
-  --indigo-mid: #4a2a9a;
-  --indigo-soft:#7b5fc4;
-  --twi-border: #b8a8e8;
 }
 
 .gradio-container,
@@ -112,43 +105,10 @@ body, gradio-app {
   100% { transform: translateY(-110px) scale(1.1) rotate(200deg); opacity: 0; }
 }
 
-.db-star {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(100, 80, 200, 0.55);
-  animation: db-twinkle ease-in-out infinite;
-}
-@keyframes db-twinkle {
-  0%,100% { opacity: 0.08; transform: scale(0.7); }
-  50%      { opacity: 0.6;  transform: scale(1.35); }
-}
-
-/* ============================== TABS ============================== */
-.gradio-container [role="tab"] {
-  font-family: 'Gaegu', cursive !important;
-  font-size: 20px !important;
-  font-weight: 700 !important;
-  border-radius: 14px 14px 0 0 !important;
-  border: 2.5px solid var(--ink) !important;
-  border-bottom: none !important;
-  background: #ede0c8 !important;
-  color: var(--ink-soft) !important;
-  padding: 10px 24px !important;
-  margin-right: 4px !important;
-  transition: background .15s !important;
-}
-.gradio-container [role="tab"][aria-selected="true"] {
-  background: #fffdf6 !important;
-  color: var(--ink) !important;
-}
-.gradio-container [role="tab"]:hover:not([aria-selected="true"]) {
-  background: #f5e8cf !important;
-}
-
 /* ============================== HEADER ============================== */
 .app-header {
   text-align: center;
-  padding: 34px 16px 10px;
+  padding: 34px 16px 18px;
   position: relative;
 }
 .app-title {
@@ -172,6 +132,33 @@ body, gradio-app {
   stroke: var(--crayon-teal); stroke-width: 5; fill: none;
   stroke-linecap: round; filter: url(#wobble-strong);
 }
+
+/* Feature strip */
+.feature-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 16px;
+  margin: 18px auto 4px;
+  max-width: 700px;
+}
+.feature-strip span {
+  font-family: 'Gaegu', cursive;
+  font-size: clamp(15px, 2vw, 19px);
+  font-weight: 700;
+  color: var(--ink);
+  background: #fffdf6;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  padding: 5px 14px;
+  box-shadow: 2px 3px 0 rgba(46,42,38,.12);
+  display: inline-block;
+}
+.feature-strip span:nth-child(1) { transform: rotate(-1.5deg); border-color: var(--crayon-orange); }
+.feature-strip span:nth-child(2) { transform: rotate(1deg);   border-color: var(--crayon-teal);   }
+.feature-strip span:nth-child(3) { transform: rotate(-0.8deg); border-color: var(--crayon-berry); }
+.feature-strip span:nth-child(4) { transform: rotate(1.2deg);  border-color: var(--crayon-sky);   }
+.feature-strip span:nth-child(5) { transform: rotate(-1deg);   border-color: var(--crayon-leaf);  }
 
 /* ============================== STORYBOOK CARDS ============================== */
 .input-card, .output-card {
@@ -209,177 +196,6 @@ body, gradio-app {
   margin: 0 0 10px; transform: rotate(-1.5deg); display: block;
 }
 
-/* ============================== BEDTIME VOICE CARDS (twilight lavender) ============================== */
-.bedtime-input-card {
-  position: relative;
-  background: linear-gradient(160deg, var(--twi) 0%, var(--twi-2) 100%) !important;
-  border: 2.5px solid var(--twi-border) !important;
-  border-radius: 18px !important;
-  padding: 30px 26px 26px !important;
-  margin: 8px !important;
-  box-shadow: 0 10px 26px rgba(80,60,180,.12), 0 0 40px rgba(180,160,255,.06) !important;
-  transform: rotate(-0.5deg);
-}
-.bedtime-input-card:hover { transform: rotate(0deg); transition: transform .35s ease; }
-.bedtime-output-card {
-  position: relative;
-  background: linear-gradient(160deg, var(--twi-deep) 0%, var(--twi) 100%) !important;
-  border: 2px solid var(--twi-border) !important;
-  border-radius: 18px !important;
-  padding: 30px 26px 26px !important;
-  margin: 8px !important;
-  box-shadow: 0 10px 26px rgba(80,60,180,.10) !important;
-  transform: rotate(0.4deg);
-}
-.bedtime-output-card:hover { transform: rotate(0deg); transition: transform .35s ease; }
-
-/* Clear Gradio internals inside bedtime cards */
-.bedtime-input-card .form, .bedtime-input-card .block,
-.bedtime-input-card .panel, .bedtime-input-card .wrap,
-.bedtime-input-card .gap, .bedtime-input-card .styler,
-.bedtime-output-card .form, .bedtime-output-card .block,
-.bedtime-output-card .panel, .bedtime-output-card .wrap,
-.bedtime-output-card .gap, .bedtime-output-card .styler {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-
-.card-eyebrow-moon {
-  font-family: 'Gaegu', cursive; font-weight: 700;
-  font-size: 22px; color: var(--indigo-mid);
-  margin: 0 0 10px; transform: rotate(-1.5deg); display: block;
-}
-
-.moon-orb {
-  width: 64px; height: 64px;
-  background: radial-gradient(circle at 38% 38%, #f5e87a, #c8a83c 60%, #8a6a10);
-  border-radius: 50%;
-  box-shadow: 0 0 24px rgba(200,168,60,.4), 0 0 48px rgba(200,168,60,.15);
-  margin: 0 auto 16px;
-  animation: moon-glow 4s ease-in-out infinite;
-}
-@keyframes moon-glow {
-  0%,100% { box-shadow: 0 0 20px rgba(200,168,60,.3); }
-  50%      { box-shadow: 0 0 40px rgba(200,168,60,.6), 0 0 80px rgba(200,168,60,.2); }
-}
-
-/* Twilight radio chips */
-.theme-pick-night .wrap,
-.theme-pick-night [role="radiogroup"] {
-  display: flex !important; flex-wrap: wrap !important; gap: 8px !important;
-}
-.theme-pick-night label {
-  background: rgba(255,255,255,.65) !important;
-  border: 2px solid var(--twi-border) !important;
-  border-radius: 14px !important;
-  padding: 8px 14px !important; margin: 0 !important; cursor: pointer !important;
-  font-family: 'Gaegu', cursive !important; font-size: 16px !important;
-  color: var(--indigo-ink) !important;
-  box-shadow: 1px 2px 0 rgba(80,60,180,.10) !important;
-  transition: transform .1s ease, background .1s ease !important;
-}
-.theme-pick-night label:hover { transform: translateY(-1px); background: rgba(255,255,255,.9) !important; }
-.theme-pick-night label:has(input:checked) {
-  background: var(--moon) !important;
-  color: #2a1a00 !important;
-  border-color: #c89e20 !important;
-  box-shadow: 2px 3px 0 rgba(80,60,0,.2) !important;
-}
-.theme-pick-night input[type="radio"] { accent-color: var(--moon); margin-right: 6px; }
-
-/* Twilight text fields */
-.field-night label span {
-  font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 19px !important; color: var(--indigo-mid) !important;
-}
-.field-night textarea,
-.field-night input[type="text"],
-.field-night input:not([type]) {
-  font-family: 'Nunito', sans-serif !important; font-size: 17px !important;
-  color: var(--indigo-ink) !important;
-  background: rgba(255,255,255,.75) !important;
-  border: 2px solid var(--twi-border) !important;
-  border-radius: 12px !important;
-  padding: 11px 14px !important;
-}
-.field-night textarea:focus, .field-night input:focus {
-  border-color: var(--moon) !important;
-  box-shadow: 0 0 8px rgba(200,168,60,.25) !important;
-  outline: none !important;
-}
-
-/* Bedtime audio input */
-.bedtime-audio label span {
-  font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 19px !important; color: var(--indigo-mid) !important;
-}
-.bedtime-audio [data-testid="audio"], .bedtime-audio .audio {
-  background: rgba(255,255,255,.6) !important;
-  border: 2px solid var(--twi-border) !important;
-  border-radius: 12px !important;
-}
-.bedtime-audio .upload-container, .bedtime-audio .wrap { background: transparent !important; }
-
-/* Bedtime button — gold on lavender */
-.btn-bedtime, .btn-bedtime button {
-  font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
-  font-size: 24px !important; color: #2a1a00 !important;
-  background: var(--moon) !important;
-  border: 2.5px solid #8a6a10 !important; border-radius: 16px !important;
-  padding: 13px 24px !important; width: 100% !important;
-  transform: rotate(-0.8deg);
-  box-shadow: 4px 5px 0 rgba(26,16,96,.25) !important;
-  transition: transform .12s ease, box-shadow .12s ease !important;
-}
-.btn-bedtime:hover, .btn-bedtime button:hover {
-  transform: rotate(-0.8deg) translate(-2px,-2px);
-  box-shadow: 6px 7px 0 rgba(26,16,96,.25) !important;
-  background: var(--moon-glow) !important;
-}
-
-/* Bedtime status */
-.bedtime-status textarea {
-  font-family: 'Caveat', cursive !important; font-size: 20px !important;
-  color: var(--indigo-mid) !important;
-  background: rgba(255,255,255,.5) !important;
-  border: 2px dashed var(--twi-border) !important;
-  border-radius: 12px !important; text-align: center !important;
-}
-.bedtime-status, .bedtime-status .block, .bedtime-status .form,
-.bedtime-status label span { background: transparent !important; color: var(--indigo-mid) !important; }
-
-/* Bedtime audio players */
-.audio-player-night {
-  background: rgba(255,255,255,.55) !important;
-  border: 2px solid var(--twi-border) !important;
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
-}
-.audio-player-night label span {
-  font-family: 'Gaegu', cursive !important; color: var(--indigo-mid) !important; font-size: 18px !important;
-}
-
-/* Bedtime story text display */
-.bedtime-title {
-  font-family: 'Gaegu', cursive; font-weight: 700;
-  font-size: clamp(22px, 3.5vw, 36px); color: var(--indigo-mid);
-  text-align: center; margin-bottom: 18px;
-}
-.bedtime-page {
-  font-family: 'Caveat', cursive; font-size: clamp(18px, 2.5vw, 26px);
-  line-height: 1.6; color: var(--indigo-ink);
-  text-align: center; padding: 14px 18px; margin: 10px 0;
-  background: rgba(255,255,255,.55); border-radius: 12px;
-  border-left: 3px solid rgba(200,168,60,.5);
-}
-.bedtime-empty {
-  text-align: center; padding: 60px 24px;
-  font-family: 'Gaegu', cursive; color: var(--indigo-soft);
-}
-.bedtime-empty .moon-icon { font-size: 48px; display: block; margin-bottom: 12px; animation: bob 2.2s ease-in-out infinite; }
-.bedtime-empty .big { font-size: 26px; color: var(--indigo-mid); margin-bottom: 6px; }
-
 /* ============================== STORYBOOK FIELDS ============================== */
 .field label span, .doodle-input label span, .tiny-toggle label span {
   font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
@@ -408,6 +224,17 @@ body, gradio-app {
 .doodle-input .upload-container, .doodle-input [data-testid="image"] .wrap {
   border: 3px dashed var(--crayon-sky) !important; border-radius: 8px !important;
   background: #f3f9ff !important; color: var(--ink-soft) !important;
+}
+
+/* Custom voice audio widget */
+.custom-voice-field label span {
+  font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
+  font-size: 19px !important; color: var(--crayon-teal) !important;
+}
+.custom-voice-field [data-testid="audio"], .custom-voice-field .audio {
+  background: #f0faf8 !important;
+  border: 2.5px solid var(--crayon-teal) !important;
+  border-radius: 12px !important;
 }
 
 /* ============================== BUTTONS ============================== */
@@ -456,6 +283,13 @@ body, gradio-app {
   box-shadow: 2px 3px 0 var(--ink) !important;
 }
 .theme-pick input[type="radio"] { accent-color: var(--crayon-orange); margin-right: 6px; }
+
+/* Page-count slider */
+.page-slider label span {
+  font-family: 'Gaegu', cursive !important; font-weight: 700 !important;
+  font-size: 19px !important; color: var(--ink) !important;
+}
+.page-slider input[type="range"] { accent-color: var(--crayon-teal) !important; }
 
 /* ============================== STATUS ============================== */
 .status-display textarea {
@@ -581,26 +415,24 @@ body, gradio-app {
   gradio-app { height: auto !important; min-height: 100vh !important; overflow-y: visible !important; overflow-x: hidden !important; }
   .gradio-container { max-width: 100vw !important; overflow-x: hidden !important; padding: 0 !important; }
   .gradio-container .gap { flex-wrap: wrap !important; }
-  .input-card, .output-card,
-  .bedtime-input-card, .bedtime-output-card {
+  .input-card, .output-card {
     transform: none !important; flex: 1 1 100% !important; width: 100% !important;
     max-width: 100% !important; min-width: 0 !important; margin: 8px 0 !important;
     box-sizing: border-box !important;
   }
   .app-title { font-size: clamp(32px, 10vw, 52px) !important; }
   .book-page { max-width: 100%; margin: 20px auto; }
-  .theme-pick label, .theme-pick-night label { font-size: 14px !important; padding: 6px 10px !important; }
+  .theme-pick label { font-size: 14px !important; padding: 6px 10px !important; }
+  .feature-strip { gap: 6px 10px; }
+  .feature-strip span { font-size: 14px !important; padding: 4px 10px !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
-  .input-card, .output-card, .bedtime-input-card, .bedtime-output-card,
-  .book-page, .book-cover, .btn-make, .btn-make button, .btn-bedtime, .btn-bedtime button,
-  .moon-orb { transform: none !important; }
+  .input-card, .output-card, .book-page, .book-cover, .btn-make, .btn-make button { transform: none !important; }
 }
 """
 
-# Combined JS: light-mode lock + kid-friendly floating animations
 COMBINED_JS = """
 () => {
   // Lock to light mode first
@@ -611,7 +443,7 @@ COMBINED_JS = """
     return;
   }
 
-  // Floating coloured sparkles (kids love these)
+  // Floating coloured sparkles
   const sparkColors = ['#ef6a3a','#f4c64a','#2ba39a','#4a9fd6','#d6517a','#74b85a'];
   const spWrap = document.createElement('div');
   spWrap.id = 'db-sparkles';
@@ -626,26 +458,12 @@ COMBINED_JS = """
     spWrap.appendChild(s);
   }
   document.body.prepend(spWrap);
-
-  // Twinkling stars (subtle on paper, vivid on night-sky bedtime cards)
-  const stWrap = document.createElement('div');
-  stWrap.id = 'db-stars';
-  stWrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;';
-  for (let i = 0; i < 32; i++) {
-    const s = document.createElement('span');
-    s.className = 'db-star';
-    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;`
-      + `width:${2+Math.random()*3}px;height:${2+Math.random()*3}px;`
-      + `animation-delay:${Math.random()*6}s;animation-duration:${2+Math.random()*3}s;`;
-    stWrap.appendChild(s);
-  }
-  document.body.prepend(stWrap);
 }
 """
 
 
-def create_layout(load_sample_fn=None, create_book_fn=None, create_bedtime_fn=None):
-    """Build the DoodleBook Gradio Blocks layout with Storybook + Bedtime Voice tabs."""
+def create_layout(load_sample_fn=None, create_book_fn=None):
+    """Build the single-tab DoodleBook Gradio Blocks layout."""
 
     _gr_major = int(gr.__version__.split(".")[0])
     design_kwargs = dict(
@@ -661,225 +479,172 @@ def create_layout(load_sample_fn=None, create_book_fn=None, create_bedtime_fn=No
     with gr.Blocks(**blocks_kwargs) as demo:
         gr.HTML(SVG_DEFS)
 
-        # ── HEADER (shared) ───────────────────────────────────────────────
+        # ── HEADER ───────────────────────────────────────────────────────────
         gr.HTML("""
         <div class="app-header">
           <h1 class="app-title">D<span class="doodle-o">oo</span>dleBook</h1>
           <svg class="title-squiggle" viewBox="0 0 360 16" preserveAspectRatio="none">
             <path d="M2,11 C40,3 70,15 110,8 S190,2 230,9 320,14 358,5"/>
           </svg>
-          <p class="app-subtitle">draw a character &middot; get a storybook &middot; hear it read aloud</p>
+          <p class="app-subtitle">your child draws a hero &middot; AI writes the story &middot; hear it read aloud</p>
+          <div class="feature-strip">
+            <span>✏️ Draw your hero</span>
+            <span>📖 AI writes 6–10 pages</span>
+            <span>🎨 FLUX illustrates it</span>
+            <span>🎙️ Narrated aloud</span>
+            <span>🖨️ Print &amp; colour</span>
+          </div>
         </div>
         """)
 
-        # ── TABS ─────────────────────────────────────────────────────────
-        with gr.Tabs():
+        # ── STORYBOOK ────────────────────────────────────────────────────────
+        with gr.Row(equal_height=False):
+            # INPUT CARD
+            with gr.Column(scale=1, elem_classes=["input-card"]):
+                gr.HTML('<p class="card-eyebrow">1 &middot; your character</p>')
+                doodle = gr.Image(
+                    sources=["upload", "webcam"],
+                    label="Upload or snap the drawing",
+                    type="numpy", height=240,
+                    elem_classes=["doodle-input"],
+                )
+                gr.HTML('<p class="card-eyebrow">2 &middot; the details</p>')
+                char_name = gr.Textbox(
+                    label="Character name",
+                    placeholder="Ziggy the robot",
+                    elem_classes=["field"],
+                )
+                hero_name = gr.Textbox(
+                    label="Hero's name in the story",
+                    placeholder="Ziggy",
+                    elem_classes=["field"],
+                )
+                theme = gr.Radio(
+                    choices=THEMES, value=THEMES[0],
+                    label="Story theme (pick one)",
+                    elem_classes=["field", "theme-pick"],
+                )
+                story_idea = gr.Textbox(
+                    label="Story spark (optional)",
+                    placeholder="e.g. 'loves dinosaurs', 'wants to fly', 'learns to share'",
+                    max_lines=2,
+                    elem_classes=["field"],
+                )
+                num_pages = gr.Slider(
+                    minimum=6, maximum=10, step=1, value=6,
+                    label="Number of pages",
+                    elem_classes=["field", "page-slider"],
+                )
+                voice = gr.Radio(
+                    choices=VOICE_CHOICES, value=DEFAULT_VOICE,
+                    label="Narrator voice",
+                    elem_classes=["field", "theme-pick"],
+                )
+                custom_voice_audio = gr.Audio(
+                    sources=["microphone", "upload"],
+                    type="filepath",
+                    label="Record or upload your voice (5–60 s of clear speech)",
+                    visible=False,
+                    elem_classes=["custom-voice-field"],
+                )
+                make_coloring = gr.Checkbox(
+                    label="Also make a coloring book",
+                    value=False, elem_classes=["tiny-toggle"],
+                )
+                make_btn = gr.Button(
+                    "Make my book!",
+                    variant="primary",
+                    elem_classes=["btn-make"],
+                )
+                status = gr.Textbox(
+                    label="Status", interactive=False,
+                    elem_classes=["status-display"],
+                    value="Ready when you are! ✏️",
+                )
+                with gr.Row(elem_classes=["download-row"]):
+                    pdf_download = gr.DownloadButton(
+                        "⬇ Story PDF", visible=False, elem_classes=["btn-pdf"],
+                    )
+                    coloring_pdf_download = gr.DownloadButton(
+                        "⬇ Coloring PDF", visible=False, elem_classes=["btn-pdf"],
+                    )
+                gr.Examples(
+                    examples=[["assets/sample_doodle.jpg", "Ziggy", "Ziggy", "brave adventure"]],
+                    inputs=[doodle, char_name, hero_name, theme],
+                    label="Try an example",
+                )
 
-            # ================================================================
-            # TAB 1 — STORYBOOK
-            # ================================================================
-            with gr.Tab("📖 Storybook"):
-                with gr.Row(equal_height=False):
-                    # INPUT CARD
-                    with gr.Column(scale=1, elem_classes=["input-card"]):
-                        gr.HTML('<p class="card-eyebrow">1 &middot; your character</p>')
-                        doodle = gr.Image(
-                            sources=["upload", "webcam"],
-                            label="Upload or snap the drawing",
-                            type="numpy", height=240,
-                            elem_classes=["doodle-input"],
-                        )
-                        gr.HTML('<p class="card-eyebrow">2 &middot; the details</p>')
-                        char_name = gr.Textbox(
-                            label="Character name",
-                            placeholder="Ziggy the robot",
-                            elem_classes=["field"],
-                        )
-                        hero_name = gr.Textbox(
-                            label="Hero's name in the story",
-                            placeholder="Ziggy",
-                            elem_classes=["field"],
-                        )
-                        theme = gr.Radio(
-                            choices=THEMES, value=THEMES[0],
-                            label="Story theme (pick one)",
-                            elem_classes=["field", "theme-pick"],
-                        )
-                        voice = gr.Radio(
-                            choices=VOICE_CHOICES, value=DEFAULT_VOICE,
-                            label="Narrator voice",
-                            elem_classes=["field", "theme-pick"],
-                        )
-                        make_coloring = gr.Checkbox(
-                            label="Also make a coloring book",
-                            value=False, elem_classes=["tiny-toggle"],
-                        )
-                        make_btn = gr.Button(
-                            "Make my book!",
-                            variant="primary",
-                            elem_classes=["btn-make"],
-                        )
-                        status = gr.Textbox(
-                            label="Status", interactive=False,
-                            elem_classes=["status-display"],
-                            value="Ready when you are! ✏️",
-                        )
-                        with gr.Row(elem_classes=["download-row"]):
-                            pdf_download = gr.DownloadButton(
-                                "⬇ Story PDF", visible=False, elem_classes=["btn-pdf"],
-                            )
-                            coloring_pdf_download = gr.DownloadButton(
-                                "⬇ Coloring PDF", visible=False, elem_classes=["btn-pdf"],
-                            )
-                        gr.Examples(
-                            examples=[["assets/sample_doodle.jpg", "Ziggy", "Ziggy", "brave adventure"]],
-                            inputs=[doodle, char_name, hero_name, theme],
-                            label="Try an example",
-                        )
+            # OUTPUT CARD
+            with gr.Column(scale=2, elem_classes=["output-card"]):
+                audio_narration = gr.Audio(
+                    label="Listen to your story",
+                    autoplay=False,
+                    elem_classes=["audio-player"],
+                )
+                book_display = gr.HTML(
+                    elem_classes=["book-stage"],
+                    value="""
+                    <div class="book-empty">
+                      <span class="arrow">↑</span>
+                      <p class="big">Your storybook appears here</p>
+                      <p>Add a drawing, pick a theme, and tap <b>Make my book!</b></p>
+                    </div>
+                    """,
+                )
+                coloring_display = gr.HTML(visible=False, elem_classes=["book-stage"])
 
-                    # OUTPUT CARD
-                    with gr.Column(scale=2, elem_classes=["output-card"]):
-                        audio_narration = gr.Audio(
-                            label="Listen to your story",
-                            autoplay=False,
-                            elem_classes=["audio-player"],
-                        )
-                        book_display = gr.HTML(
-                            elem_classes=["book-stage"],
-                            value="""
-                            <div class="book-empty">
-                              <span class="arrow">↑</span>
-                              <p class="big">Your storybook appears here</p>
-                              <p>Add a drawing, pick a theme, and tap <b>Make my book!</b></p>
-                            </div>
-                            """,
-                        )
-                        coloring_display = gr.HTML(visible=False, elem_classes=["book-stage"])
+        # Behind the magic accordion
+        with gr.Accordion("Behind the magic ✨", open=False, elem_classes=["behind-magic"]):
+            with gr.Tabs():
+                with gr.Tab("Story"):
+                    story_info = gr.JSON(label="Generated story structure")
+                with gr.Tab("Images"):
+                    image_info = gr.Textbox(label="Illustration details", interactive=False, lines=5)
+                with gr.Tab("Models"):
+                    gr.Markdown(
+                        """
+| Model | Role | Size | Sponsor |
+|---|---|---|---|
+| **MiniCPM5-1B** | Story writer | 1B | OpenBMB |
+| **VoxCPM2** | Voice narrator | 2B | OpenBMB |
+| **FLUX.2-klein** | Illustrator | 4B | Black Forest Labs |
 
-                # Behind the magic accordion (inside Storybook tab)
-                with gr.Accordion("Behind the magic ✨", open=False, elem_classes=["behind-magic"]):
-                    with gr.Tabs():
-                        with gr.Tab("Story"):
-                            story_info = gr.JSON(label="Generated story structure")
-                        with gr.Tab("Images"):
-                            image_info = gr.Textbox(label="Illustration details", interactive=False, lines=5)
-                        with gr.Tab("Models"):
-                            gr.Markdown(
-                                """
-| Model | Role | Size |
-|---|---|---|
-| **MiniCPM5-1B** | Story writer | 1B |
-| **VoxCPM2** | Voice narrator | 2B |
-| **FLUX.2-klein** | Illustrator | 4B |
+**Total: ~7B parameters.** The *brain* (story + voice) is a **3B small-model stack**. FLUX is the renderer. Tiny Titan.
+                        """
+                    )
+                with gr.Tab("Trace"):
+                    _tb_kwargs = dict(label="Generation trace", interactive=False, lines=8)
+                    if _gr_major < 6:
+                        _tb_kwargs["show_copy_button"] = True
+                    trace_info = gr.Textbox(**_tb_kwargs)
 
-The *brain* of DoodleBook — the story + the voice — is a **3B small-model stack**. FLUX is the printer. **Tiny Titan.**
-                                """
-                            )
-                        with gr.Tab("Trace"):
-                            _tb_kwargs = dict(label="Generation trace (Open Trace)", interactive=False, lines=8)
-                            if _gr_major < 6:
-                                _tb_kwargs["show_copy_button"] = True
-                            trace_info = gr.Textbox(**_tb_kwargs)
-
-            # ================================================================
-            # TAB 2 — BEDTIME VOICE
-            # ================================================================
-            with gr.Tab("🌙 Bedtime Voice"):
-                gr.HTML("""
-                <div style="text-align:center;padding:20px 0 4px;">
-                  <div class="moon-orb"></div>
-                  <p style="font-family:'Caveat',cursive;font-size:22px;color:#4a2a9a;margin-top:4px;">
-                    record your voice &middot; get a bedtime story narrated in it &middot; English + Kannada
-                  </p>
-                </div>
-                """)
-
-                with gr.Row(equal_height=False):
-                    # BEDTIME INPUT CARD
-                    with gr.Column(scale=1, elem_classes=["bedtime-input-card"]):
-                        gr.HTML('<p class="card-eyebrow-moon">1 &middot; tonight\'s adventure</p>')
-                        bedtime_genre = gr.Radio(
-                            choices=BEDTIME_GENRES, value=BEDTIME_GENRES[0],
-                            label="Genre",
-                            elem_classes=["field-night", "theme-pick-night"],
-                        )
-                        gr.HTML('<p class="card-eyebrow-moon" style="margin-top:14px">2 &middot; the mood</p>')
-                        bedtime_mood = gr.Radio(
-                            choices=BEDTIME_MOODS, value=BEDTIME_MOODS[0],
-                            label="Mood",
-                            elem_classes=["field-night", "theme-pick-night"],
-                        )
-                        gr.HTML('<p class="card-eyebrow-moon" style="margin-top:14px">3 &middot; the hero</p>')
-                        bedtime_hero = gr.Textbox(
-                            label="Hero's name (optional)",
-                            placeholder="Finn, Lily, little one…",
-                            elem_classes=["field-night"],
-                        )
-                        gr.HTML('<p class="card-eyebrow-moon" style="margin-top:14px">4 &middot; your voice</p>')
-                        bedtime_voice = gr.Audio(
-                            sources=["microphone", "upload"],
-                            type="filepath",
-                            label="Record or upload 5–60 s of clear speech",
-                            elem_classes=["bedtime-audio"],
-                        )
-                        bedtime_btn = gr.Button(
-                            "Tuck in with a story 🌙",
-                            variant="primary",
-                            elem_classes=["btn-bedtime"],
-                        )
-                        bedtime_status = gr.Textbox(
-                            label="Status", interactive=False,
-                            elem_classes=["bedtime-status"],
-                            value="Ready for bedtime… 🌙",
-                        )
-
-                    # BEDTIME OUTPUT CARD
-                    with gr.Column(scale=2, elem_classes=["bedtime-output-card"]):
-                        bedtime_en_audio = gr.Audio(
-                            label="🌙 English narration",
-                            autoplay=False,
-                            elem_classes=["audio-player-night"],
-                        )
-                        bedtime_kn_audio = gr.Audio(
-                            label="🌙 ಕನ್ನಡ ಕಥೆ  (Kannada story)",
-                            autoplay=False,
-                            elem_classes=["audio-player-night"],
-                        )
-                        bedtime_display = gr.HTML(
-                            value="""
-                            <div class="bedtime-empty">
-                              <span class="moon-icon">🌙</span>
-                              <p class="big">Your bedtime story appears here</p>
-                              <p style="color:#7b5fc4">Record your voice, pick a genre, and tap <b>Tuck in with a story 🌙</b></p>
-                            </div>
-                            """,
-                        )
-
-        # ── FOOTER (shared) ───────────────────────────────────────────────
+        # ── FOOTER ───────────────────────────────────────────────────────────
         gr.HTML("""
         <div class="app-footer">
-          <p>stitched together with crayons &amp; code for the Build Small Hackathon 2026</p>
-          <p class="badges">Well-Tuned &middot; Off-Brand &middot; Field Notes &middot; Open Trace</p>
+          <p>stitched together with crayons &amp; code &middot; Build Small Hackathon 2026</p>
+          <p class="badges">Off-Brand &middot; Open Trace &middot; Field Notes &middot; Tiny Titan &middot; Sponsor: OpenBMB &middot; Sponsor: Black Forest Labs</p>
         </div>
         """)
 
-        # ── WIRING ───────────────────────────────────────────────────────
+        # ── WIRING ───────────────────────────────────────────────────────────
+        # Show/hide custom voice recorder when "My Voice" is selected
+        voice.change(
+            fn=lambda v: gr.update(visible=(v == "my_voice")),
+            inputs=[voice],
+            outputs=[custom_voice_audio],
+        )
+
         if create_book_fn:
             make_btn.click(
                 fn=create_book_fn,
-                inputs=[doodle, char_name, theme, hero_name, voice, make_coloring],
+                inputs=[doodle, char_name, theme, hero_name, voice, make_coloring,
+                        num_pages, story_idea, custom_voice_audio],
                 outputs=[book_display, status, audio_narration, pdf_download,
                          story_info, image_info, trace_info,
                          coloring_display, coloring_pdf_download],
             )
         if load_sample_fn:
             demo.load(fn=load_sample_fn, outputs=[book_display])
-        if create_bedtime_fn:
-            bedtime_btn.click(
-                fn=create_bedtime_fn,
-                inputs=[bedtime_voice, bedtime_hero, bedtime_genre, bedtime_mood],
-                outputs=[bedtime_display, bedtime_status, bedtime_en_audio, bedtime_kn_audio],
-            )
 
     demo.design_kwargs = design_kwargs if _gr_major >= 6 else {}
     return demo
