@@ -23,269 +23,131 @@ models:
   - openbmb/VoxCPM2
 ---
 
-# DoodleBook
+# DoodleBook 📚🖍️
 
-Draw a character, upload it, and DoodleBook turns it into a narrated six-page picture book plus a matching printable coloring book.
+**A child draws a character → DoodleBook turns it into a narrated, hand-drawn crayon storybook *and* a matching printable coloring book.**
 
-The project was built for the Build Small Hackathon 2026. The core idea is to keep the reasoning stack small, use a strong image renderer only where it matters, and make the whole flow feel like a child-facing product instead of a model demo.
+Built for the **Build Small Hackathon 2026 · Adventure in Thousand Token Wood**. The bet: keep the *reasoning* brain tiny (a ~3B small-model stack writes and narrates the story), use a strong image model only as the *renderer*, and wrap it all in a UI that feels like a children's product — not a model demo.
 
-## What it does
+> Open the Space and a real sample book loads instantly. Then draw your own character, upload it, and watch your hero come to life across six pages.
 
-- Takes a doodle photo from upload or webcam.
-- Generates a six-page children's story with a consistent hero.
-- Renders six full-color story pages with FLUX.
-- Generates narration audio for the whole book.
-- Exports a story PDF.
-- Generates a matching black-and-white coloring book as a second output.
+---
 
-## Current architecture
+## ✨ What it does
 
-There are two runtime modes in this repo.
+1. **Draw & upload** a character (upload or webcam).
+2. **Story** — a small model writes a complete six-page story with a consistent hero.
+3. **Illustrations** — FLUX renders six crayon pages where **your character stays the same on every page** (it's built from *your* drawing).
+4. **Narration** — the whole book is read aloud in a child-friendly voice.
+5. **Coloring book** — a matching black-and-white line-art version to print and color.
+6. **Downloads** — one-tap **Story PDF** and **Coloring PDF** (works on mobile too).
 
-### 1. Local Modal-backed app
+---
 
-Use [run_modal.py](run_modal.py) for the real end-to-end flow during development.
+## 🧠 Models & the "Tiny Titan" argument
 
-- UI: Gradio 5 custom Blocks layout
-- Story: local generator by default, optional Modal MiniCPM route
-- Images: Modal FLUX pipeline
-- TTS: Modal VoxCPM pipeline
-- PDFs: local export
-- Coloring book: direct FLUX line-art render, with traced fallback
+| Role | Model | Size | Sponsor |
+|---|---|---|---|
+| 📖 Story (the brain) | `openbmb/MiniCPM5-1B` | **1B** | OpenBMB |
+| 🔊 Narration (the brain) | `openbmb/VoxCPM2` | **2B** | OpenBMB |
+| 🎨 Illustration (the printer) | `black-forest-labs/FLUX.2-klein-4B` | 4B | Black Forest Labs |
 
-Start it with:
+**The product's *reasoning* is a ~3B small-model stack.** MiniCPM5-1B authors the narrative and per-page scene plan; VoxCPM2 performs it. FLUX is not the "intelligence" — it's the renderer that prints what the small models decided. That's the Tiny Titan story: the small models drive the experience.
 
-```bash
-python run_modal.py
-```
+---
 
-The default local URL is:
+## 🎨 The hard part: cross-page character consistency
 
-```text
-http://127.0.0.1:7880
-```
+Generate six pages independently and you get six different characters. DoodleBook keeps **one** hero — *the one the child drew* — with **no per-user training**:
 
-### 2. HF Spaces / ZeroGPU-oriented app
+1. **Canonical-character pass** — the doodle is sent through FLUX **img2img once** to become a single clean "model-sheet" hero.
+2. **Every page is conditioned on that canonical image**, so the same creature appears in each scene.
+3. **Seed-locking** (deterministic per page) + a **fixed character description** anchor identity and reproducibility.
 
-Use [app.py](app.py) for the official Hugging Face Gradio Space target.
+Identity comes from the child's drawing, carried by image conditioning — a cat doodle becomes a cat hero, a robot becomes a robot. Full write-up in **[Field Notes →](docs/blog.md)**.
 
-- `app.py` is the Space entrypoint declared in the repo metadata.
-- `app_zerogpu.py` is the alternate experimental path kept for local ZeroGPU-focused iteration.
+---
 
-## Stack used in the hackathon
+## 🖍️ Coloring book: redraw, don't trace
 
-This project deliberately mixes a small-model reasoning stack, a stronger dedicated image renderer, a custom Gradio presentation layer, and remote inference infrastructure that is cheap enough to demo but strong enough to feel like a real product.
+Tracing finished crayon pages turned textured backgrounds into speckle. Instead, DoodleBook hands each color page back to FLUX as img2img with a *"clean coloring-book line art"* prompt — it **redraws** clean, colorable outlines that match the story page, then a tiny local pass crisps them to pure black-on-white.
 
-The important distinction is:
+---
 
-- the app "brain" is small
-- the renderer is specialized
-- the UX is product-shaped, not notebook-shaped
-- the deployment path is built around a Gradio Space front-end
+## 🔍 Open Trace — every book is reproducible
 
-### Full stack at a glance
+Open **"Behind the magic → Trace"** on any generated book and you get the full, reproducible record:
 
-| Layer | Stack | Role in the product |
+- the locked **seed**
+- the **per-page prompts** and scene plan
+- the exact **model IDs** used
+- **stage timings** (story / images / narration / PDF / coloring)
+- any fallback reasons (surfaced, never silent)
+
+Same inputs → same book.
+
+---
+
+## 🏗️ How it runs (Hugging Face ZeroGPU)
+
+- **Gradio 6** Space, **ZeroGPU** hardware. `app.py` is the entrypoint.
+- All three models load **on CUDA at module scope** (the ZeroGPU-recommended pattern); each generation stage is a `@spaces.GPU` call.
+- Narration runs **in parallel** with illustration and is surfaced the moment it's ready.
+- A real, pre-generated **sample book loads instantly** on open (no GPU needed to be impressed).
+
+---
+
+## 🏅 Hackathon badges
+
+We only claim what we can show. Every claim below points to a real, inspectable artifact.
+
+| Badge | Status | Evidence |
 |---|---|---|
-| Product UI | Gradio 5 Blocks + custom CSS/HTML/JS | Child-facing scrapbook interface, status streaming, downloads |
-| Story engine | MiniCPM5-1B + local structured fallback | Writes the six-page narrative and scene plan |
-| Image engine | FLUX.2-klein-4B on Modal | Draws consistent full-color pages and dedicated coloring pages |
-| Voice engine | VoxCPM2 on Modal | Narrates the full storybook |
-| Coloring engine | Direct FLUX line-art pass + cleanup fallback | Produces printable black-and-white pages |
-| Export layer | Pillow + FPDF | Builds printable story and coloring PDFs |
-| Hosting target | Hugging Face Spaces | Gradio app shell and user entrypoint |
-| Remote compute | Modal | GPU execution for heavy image and TTS work |
-| Observability | Heartbeat streaming + stage timing in trace panel | Keeps long runs visible and debuggable |
+| **Off-Brand** | ✅ Claimed | A fully custom scrapbook UI — crayon fonts (Gaegu/Caveat), paper textures, hand-drawn SVG frames, light-locked theme. **Zero Gradio defaults.** See [`ui/layout.py`](ui/layout.py). |
+| **Open Trace** | ✅ Claimed | Every book exposes a full reproducible trace (seed, per-page prompts, model IDs, timings) in the in-app **Trace** panel. |
+| **Field Notes** | ✅ Claimed | Engineering write-up on cross-page character consistency without per-user training: **[docs/blog.md](docs/blog.md)**. |
+| **Tiny Titan** | ✅ Argued | The reasoning stack (MiniCPM5-1B + VoxCPM2 ≈ **3B**) is the product brain; FLUX is the renderer. |
+| **Sponsor — OpenBMB** | ✅ | `MiniCPM5-1B` writes the story; `VoxCPM2` narrates it. |
+| **Sponsor — Black Forest Labs** | ✅ | `FLUX.2-klein-4B` renders every page and the coloring line art. |
+| **Well-Tuned** | 🔜 Roadmap (not claimed) | A crayon-style FLUX LoRA is the planned next step. **No LoRA is trained or published yet**, so we make no Well-Tuned claim — consistency today is achieved by the canonical-character + seed + description stack. |
 
-### Frontend and product shell
+---
 
-- Gradio 5
-- Custom scrapbook-style UI in [ui/layout.py](ui/layout.py)
-- HTML-based book rendering in [book_builder.py](book_builder.py)
-- Fixed-position PDF downloads under the status panel
-- Streaming progress heartbeats to keep long jobs alive in the browser
-- File-backed page rendering instead of giant inline base64 payloads
+## 🧩 Architecture (Space)
 
-### Story generation stack
+| Layer | What | Where |
+|---|---|---|
+| Product UI | Custom scrapbook Gradio 6 Blocks + CSS/JS | [`ui/layout.py`](ui/layout.py) |
+| Book/PDF assembly | HTML book + printable PDFs | [`book_builder.py`](book_builder.py) |
+| Story | MiniCPM5-1B + deterministic structured fallback | [`app.py`](app.py) |
+| Images | FLUX.2-klein canonical + per-page render | [`app.py`](app.py) |
+| Voice | VoxCPM2 narration (parallel) | [`app.py`](app.py) |
+| Coloring | FLUX img2img line art + crisp/threshold cleanup | [`services/coloring.py`](services/coloring.py) |
+| Config | Models, seeds, voices, palette | [`config.py`](config.py) |
 
-- `openbmb/MiniCPM5-1B`
-- Local fast fallback story generator in [services/story.py](services/story.py)
-- Optional Modal story worker in [modal_workers/modal_story_gen.py](modal_workers/modal_story_gen.py)
+> The source repo also includes a **Modal-backed** development path (story/image/voice as deployed Modal functions) used for local quality validation; the hosted Space runs the self-contained ZeroGPU path in `app.py`.
 
-Why it matters:
-- The story model is the small-model "brain" of the app.
-- It keeps the narrative stack small and hackathon-aligned.
-- The story system outputs both prose and scene prompts, so downstream image generation stays structured.
-- The local structured fallback means the Space can still produce a valid book if the remote story path is unavailable.
+---
 
-### Image generation stack
-
-- `black-forest-labs/FLUX.2-klein-4B`
-- Modal deployment for image generation in [modal_workers/modal_image_gen.py](modal_workers/modal_image_gen.py)
-- Parallel canonical-character plus per-page render flow in [services/images.py](services/images.py)
-- One canonical character render from the child doodle, then scene-specific page renders
-- Separate direct line-art render path for the coloring book
-
-Why it matters:
-- The app needs high visual quality and character consistency.
-- FLUX is used as the renderer, not as the reasoning engine.
-- The character consistency pipeline is what makes the book feel authored rather than randomly reimagined on every page.
-- The line-art renderer is separate because tracing finished crayon pages produced bad coloring results.
-
-### TTS stack
-
-- `openbmb/VoxCPM2`
-- Modal TTS worker in [modal_workers/modal_tts.py](modal_workers/modal_tts.py)
-- Service wrapper in [services/tts.py](services/tts.py)
-- Parallelized with image generation in the real Modal-backed app
-
-Why it matters:
-- Narration is part of the child-facing experience, not a side feature.
-- TTS runs in parallel with image generation in the real local pipeline.
-- Overlapping TTS with illustration time reduces total wait without degrading output quality.
-
-### Coloring-book stack
-
-- Direct FLUX line-art rendering for the same scenes
-- Cleanup and fallback pipeline in [services/coloring.py](services/coloring.py)
-- Modal `render_coloring_page` for dedicated line-art scene generation
-- Local cleanup for thresholding, despeckling, and printable black-on-white output
-
-Why it matters:
-- The main bug fixed in this version was that the coloring book used to trace finished crayon-textured images.
-- The improved pipeline renders dedicated line-art pages instead of trying to strip color out after the fact.
-- This is the main quality improvement that separates the current version from the earlier broken coloring-book output.
-
-### Infrastructure stack
-
-- Modal for remote GPU inference
-- Hugging Face Spaces as the target host
-- Python 3.11 / 3.13 local development
-- `diffusers`, `transformers`, `torch`, `accelerate`
-- `Pillow`, `OpenCV`, `FPDF`
-- Gradio client-compatible API surface for testing and debugging
-- Hugging Face org deployment target: `build-small-hackathon`
-
-### Sponsor and hackathon alignment
-
-This app directly reflects the hackathon sponsor/tool stack:
-
-- `OpenBMB`: MiniCPM5-1B and VoxCPM2
-- `Black Forest Labs`: FLUX.2-klein-4B
-- `Modal`: remote GPU inference
-- `OpenAI Codex`: debugging, architecture fixes, deployment preparation, README/release work
-- `Hugging Face Spaces`: final Gradio app surface
-
-For hackathon judging, the main narrative is:
-
-- Tiny Titan reasoning stack
-- Off-brand custom UI
-- Real multimodal product loop
-- Remote GPU orchestration with a Gradio user experience
-- Child-usable output artifacts: storybook PDF, audio, coloring book PDF
-
-## Key engineering fixes in this version
-
-- Added direct Modal coloring-page rendering with `render_coloring_page`.
-- Fixed the live app to keep the Gradio stream alive during long coloring generation.
-- Added stage timing so story, image, PDF, TTS, and coloring costs are visible.
-- Reduced final-page payload size by replacing giant inline base64 book HTML with file-backed image URLs.
-- Fixed download serving through Gradio temp-file paths.
-- Removed port confusion between the local test app and the real Modal-backed app.
-
-## Measured performance
-
-Measured against the real local Modal-backed app flow:
-
-- Story-only stage: about `0.3s`
-- Full-color book, warm: about `75s to 80s`
-- Full-color book + coloring book, warm: about `200s`
-- Slowest stage: coloring-book generation
-
-The current bottleneck is still the coloring-book path, even after the direct line-art fix.
-
-## Repository layout
-
-```text
-app.py                  Main Gradio app variant
-app_zerogpu.py          ZeroGPU-oriented app variant
-run_modal.py            Real local Modal-backed app
-book_builder.py         HTML and PDF assembly
-services/               Orchestration and fallbacks
-modal_workers/          Modal remote workers
-ui/                     Custom Gradio layout
-assets/                 Sample doodles and sample book pages
-docs/                   Specs and notes
-```
-
-## Local setup
+## ▶️ Run locally
 
 ```bash
 pip install -r requirements.txt
-python run_modal.py
+python app.py
 ```
 
-If you want the real Modal-backed app, use `run_modal.py`, not `app.py`.
+The example doodle (`assets/sample_doodle.jpg`) and the instant sample book are included.
 
-## Hugging Face Space deployment target
+---
 
-The intended hosted version is a Gradio Space in the `build-small-hackathon` org.
+## 🤝 Sponsor & tool stack
 
-Target format:
+- **OpenBMB** — MiniCPM5-1B (story) + VoxCPM2 (voice)
+- **Black Forest Labs** — FLUX.2-klein-4B (illustration + line art)
+- **Hugging Face Spaces / ZeroGPU** — hosting + GPU
+- **Gradio 6** — the product shell
 
-```text
-build-small-hackathon/DoodleBook
-```
-
-Official target configuration:
-
-- Hugging Face Space SDK: `gradio`
-- Space entrypoint: `app.py`
-- Hardware target: `ZeroGPU`
-- Space frontend and API live on Hugging Face
-- Local or Spaces-managed inference path should be preferred for the official org deployment
-
-Important distinction:
-
-- `run_modal.py` is the best local development and debugging path.
-- `app.py` is the correct Hugging Face Space entrypoint.
-- Do not point the Space metadata at `run_modal.py`, because that is the Modal-backed dev runtime rather than the official hosted Gradio runtime.
-
-If you choose the Modal-backed hosted variant later, that becomes a different deployment shape and requires secrets.
-
-Required secrets only for the Modal-backed hosted variant:
-
-- `MODAL_TOKEN_ID`
-- `MODAL_TOKEN_SECRET`
-- any Hugging Face token needed by Modal workers for model pulls
-
-Why the Gradio Space + ZeroGPU shape is preferred for the hackathon org:
-
-- keeps the user-facing app as a normal Gradio Space
-- matches the official hackathon org publishing model
-- keeps the demo easy to judge, share, and run from the org page
-- avoids depending on a separate private frontend host
-
-Tradeoff:
-
-- The pure ZeroGPU path is easier to host in the official org.
-- The Modal-backed path currently gives stronger image and TTS quality.
-- The repo keeps both because local quality validation and official hosting have different constraints.
-
-## Hackathon fit
-
-This project targets the hackathon stack in a deliberate way:
-
-- Small-model reasoning for story generation
-- Strong but scoped rendering model for visuals
-- Distinct multimodal outputs: story, illustrations, narration, coloring book
-- Real product UX instead of a bare prompt box
-- Clear deployment story for Hugging Face Spaces plus Modal GPU workers
-
-## Contributors
-
-- Sushruth S.
-- OpenAI Codex: debugging, architecture fixes, rendering pipeline fixes, README and release preparation
+---
 
 ## License
 
