@@ -112,10 +112,9 @@ def load_kannada_tts():
 
 
 if ON_ZEROGPU:
-    # translation + kannada_tts are gated repos (ai4bharat) that require HF_TOKEN.
-    # Load them lazily at inference time only so a missing token doesn't crash startup.
     for _name, _loader in (
         ("flux", load_flux), ("story", load_story), ("tts", load_tts),
+        ("translation", load_translation), ("kannada_tts", load_kannada_tts),
     ):
         try:
             _loader()
@@ -1183,20 +1182,15 @@ def generate_tts_cloned_gpu(text: str, ref_wav: str | None, mood: str = "calming
 
 @spaces.GPU(duration=120)
 def generate_kannada_gpu(text: str, ref_wav: str, mood: str = "calming") -> str:
-    """Translate English story to Kannada and narrate via IndicF5. Returns WAV path.
-    Requires HF_TOKEN set in Space secrets (both ai4bharat models are gated)."""
+    """Translate English story to Kannada (NLLB-200) and narrate via MMS-TTS-Kan.
+    ref_wav is accepted for API compatibility but MMS-TTS uses a fixed voice.
+    Returns a WAV file path."""
     if not ref_wav or not os.path.exists(str(ref_wav)):
-        raise ValueError("Voice clip required for Kannada narration.")
-    if not os.environ.get("HF_TOKEN"):
-        raise ValueError(
-            "Kannada narration needs HF_TOKEN in Space secrets "
-            "(ai4bharat/IndicF5 and indictrans2-en-indic-1B are gated). "
-            "English narration works without it."
-        )
+        raise ValueError("Voice clip required to enable Kannada narration.")
     from indic_text import translate_to_kannada
     from indic_tts import narrate_kannada
     kn_text = translate_to_kannada(text)
-    return narrate_kannada(ref_wav, "ಇದು ನನ್ನ ಧ್ವನಿ", kn_text, mood, 0.45)
+    return narrate_kannada(ref_wav, "", kn_text, mood, 0.45)
 
 
 def create_bedtime(ref_audio, hero_name, bedtime_genre, bedtime_mood):

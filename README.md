@@ -21,8 +21,9 @@ models:
   - black-forest-labs/FLUX.2-klein-4B
   - openbmb/MiniCPM5-1B
   - openbmb/VoxCPM2
-  - ai4bharat/IndicF5
-  - ai4bharat/indictrans2-en-indic-1B
+  - sush0401/IndicF5-Kannada-Bedtime-v2
+  - facebook/nllb-200-distilled-600M
+  - facebook/mms-tts-kan
 ---
 
 # DoodleBook 📚🖍️

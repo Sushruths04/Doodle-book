@@ -1,24 +1,22 @@
-"""English → Kannada translation via AI4Bharat IndicTrans2."""
+"""English → Kannada translation via facebook/nllb-200-distilled-600M (non-gated)."""
 from __future__ import annotations
-import os
 import re
 import torch
-from config import TRANSLATION_MODEL
 
-_HUB_ID = TRANSLATION_MODEL.hub_id
-_tok   = None
-_model = None
+_HUB_ID  = "facebook/nllb-200-distilled-600M"
+_SRC     = "eng_Latn"
+_TGT     = "kan_Knda"
+_model   = None
+_tok     = None
 
 
 def _get_model():
-    global _tok, _model
-    if _tok is None or _model is None:
-        from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
-        token = os.environ.get("HF_TOKEN") or None
-        _tok   = AutoTokenizer.from_pretrained(_HUB_ID, trust_remote_code=True, token=token)
-        _model = AutoModelForSeq2SeqLM.from_pretrained(_HUB_ID, trust_remote_code=True, token=token)
-        _model = _model.to("cuda").eval()
-    return _tok, _model
+    global _model, _tok
+    if _model is None:
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        _tok   = AutoTokenizer.from_pretrained(_HUB_ID, src_lang=_SRC)
+        _model = AutoModelForSeq2SeqLM.from_pretrained(_HUB_ID).to("cuda").eval()
+    return _model, _tok
 
 
 try:
@@ -27,45 +25,24 @@ except Exception:
     pass
 
 
-def _split_sentences(text: str, max_chars: int = 180):
-    parts = re.split(r"(?<=[.!?।])\s+|\n+", text.strip())
-    out = []
-    for p in parts:
-        p = p.strip()
-        if not p:
-            continue
-        while len(p) > max_chars:
-            cut = p.rfind(" ", 0, max_chars)
-            cut = cut if cut > 0 else max_chars
-            out.append(p[:cut].strip())
-            p = p[cut:].strip()
-        out.append(p)
-    return out or [text.strip()]
-
-
 def translate_to_kannada(en_text: str) -> str:
-    """Translate English story text to Kannada script."""
+    """Translate an English string to Kannada via NLLB-200."""
     text = (en_text or "").strip()
     if not text:
         raise ValueError("Nothing to translate.")
 
-    from IndicTransToolkit.processor import IndicProcessor
-    tok, model = _get_model()
-    ip = IndicProcessor(inference=True)
+    model, tok = _get_model()
+    tgt_id = tok.lang_code_to_id[_TGT]
 
-    sents = _split_sentences(text, max_chars=180)
-    batch = ip.preprocess_batch(sents, src_lang="eng_Latn", tgt_lang="kan_Knda")
-    inputs = tok(batch, truncation=True, padding="longest", return_tensors="pt").to(model.device)
+    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
+    if not sentences:
+        sentences = [text]
 
-    with torch.inference_mode():
-        generated = model.generate(
-            **inputs, max_length=512, num_beams=5,
-            num_return_sequences=1, length_penalty=1.0,
-        )
-    decoded = tok.batch_decode(generated, skip_special_tokens=True)
-    translations = ip.postprocess_batch(decoded, lang="kan_Knda")
+    parts = []
+    for sent in sentences:
+        inputs = tok(sent, return_tensors="pt", padding=True).to("cuda")
+        with torch.no_grad():
+            out = model.generate(**inputs, forced_bos_token_id=tgt_id, max_length=512)
+        parts.append(tok.decode(out[0], skip_special_tokens=True))
 
-    kn = " ".join(t.strip() for t in translations if t.strip())
-    if not kn:
-        raise RuntimeError("Translation returned empty Kannada text.")
-    return kn
+    return " ".join(parts)

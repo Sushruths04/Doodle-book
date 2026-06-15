@@ -27,6 +27,3 @@ requests
 huggingface_hub
 soundfile
 librosa>=0.10.0
-
-# Bedtime Voice tab (Kannada support)
-IndicTransToolkit @ git+https://github.com/VarunGumma/IndicTransToolkit.git
