@@ -144,12 +144,12 @@ import random as _random
 THEME_TEMPLATES = {
     "brave adventure": [
         [   # arc A: overcoming fear of the dark
-            ("{hero} was afraid of the dark, but wanted to be brave.", "{hero} looking nervously at the dark forest path"),
-            ("One night, a baby bird cried from inside the dark trees.", "{hero} hearing a bird cry from the shadowy forest"),
-            ("{hero} took one small step forward, then another.", "{hero} stepping carefully into the dark with a tiny lantern"),
-            ("Inside the forest, moonlight made everything look magical.", "{hero} looking around in wonder at the moonlit trees"),
-            ("{hero} found the bird and gently carried it home.", "{hero} cradling a small bird carefully in both hands"),
-            ("Back safe, {hero} smiled — brave hearts face their fears.", "{hero} smiling proudly outside the forest, holding the bird"),
+            ("{hero} loved golden daytime more than anything, but when the sun went down, a cold shiver always crept up their back. The shadows in the forest path twisted into strange shapes, and {hero}'s heart would beat very fast. {hero} dreamed of being brave — but brave felt so very far away.", "{hero} standing nervously at the edge of a dark forest path at dusk, a tiny lantern in hand"),
+            ("One night, a tiny bird cried out from deep inside the dark trees — a small, lost sound. {hero} stood very still at the forest's edge, listening hard. The bird needed help, and {hero} was the only one close enough to hear it.", "{hero} listening with wide eyes at the forest entrance, a faint bird cry coming from the dark trees"),
+            ("{hero} took one shaky breath and stepped onto the dark path, one careful foot at a time. The lantern cast a warm golden circle around {hero}, pushing back the shadows just enough. 'One step at a time,' {hero} whispered to the lantern.", "{hero} stepping carefully down the dark forest path, holding a small glowing lantern"),
+            ("Inside the trees, something surprising happened — the dark was full of beauty, not danger. Moonlight turned the leaves silver and made the dewdrops sparkle like tiny stars. {hero} felt the fear beginning to melt, replaced by wide-eyed wonder.", "{hero} standing in moonlit forest, looking around in amazement at glowing leaves and sparkling dewdrops"),
+            ("{hero} found the baby bird on a low branch, ruffled and trembling. Gently, gently, {hero} cupped both hands around the tiny creature and felt its quick little heartbeat. Walking home through the moonlit trees, {hero} felt ten times taller than before.", "{hero} carefully cradling a tiny bird in cupped hands, walking home through the glowing moonlit forest"),
+            ("Back in the warm light of home, {hero} placed the bird safely in a nest of soft cloth. Brave hearts don't need the fear to disappear — they just need to start walking, {hero} had discovered. {hero} looked out at the dark night and, for the very first time, thought it looked beautiful.", "{hero} smiling proudly in the warm doorway light, holding the safe little bird, with the moonlit forest behind"),
         ],
         [   # arc B: the broken bridge
             ("{hero} set off to bring bread to grandmother across the river.", "{hero} walking cheerfully with a basket of bread"),
@@ -170,12 +170,12 @@ THEME_TEMPLATES = {
     ],
     "making a new friend": [
         [   # arc A: the new kid
-            ("{hero} was nervous — today was the first day at a new place.", "{hero} standing at a doorway looking shy and unsure"),
-            ("Everyone already seemed to know each other.", "{hero} watching other children play together"),
-            ("Then {hero} saw someone else sitting alone by the fence.", "{hero} noticing another child sitting quietly alone"),
-            ("{hero} walked over and said, 'Hi, I'm {hero}. Want to play?'", "{hero} walking towards the lonely child with a warm smile"),
-            ("The child's face lit up like sunshine.", "{hero} and the new friend laughing and playing together"),
-            ("{hero} learned — one small hello can change everything.", "{hero} and the new friend waving goodbye, happy and tired"),
+            ("{hero} stood at the entrance of the new place with a tight feeling in their chest. Everyone inside already seemed to know each other — laughing, running, belonging. {hero} didn't know a single name, and the morning felt very long.", "{hero} standing shyly at a doorway watching other children play happily together"),
+            ("Then {hero} noticed someone else — sitting alone by the fence, watching the others too. The child had the same tight look on their face that {hero} had. Something about that made {hero} feel a little less alone.", "{hero} noticing a lonely child sitting quietly by a fence, looking the same way {hero} feels"),
+            ("{hero} took a deep breath, walked over, and said the five most important words: 'Hi. Do you want to play?' The words came out a bit wobbly, but they came out. The other child looked up slowly.", "{hero} walking towards the lonely child with a warm, nervous smile, hand raised in greeting"),
+            ("The child's whole face changed — like sunshine breaking through clouds. 'Yes,' they said, and both of them stood up at exactly the same time. {hero} had never been so glad to ask a question.", "{hero} and the new friend laughing together as they stand up at the same time"),
+            ("By lunchtime, {hero} and the new friend were making up the rules of an entirely new game. They had invented their own handshake and a secret name for their team. The morning that had felt so long was suddenly over.", "{hero} and the new friend playing their new game together, both laughing"),
+            ("{hero} waved goodbye at the end of the day with a full, happy heart. One small hello had turned a stranger into a friend, and a lonely morning into the best day in a long time. {hero} had learned that the bravest thing can be the simplest thing.", "{hero} and the new friend waving goodbye happily, both tired and smiling"),
         ],
         [   # arc B: the robot who didn't know how
             ("{hero} met a little robot who had never played before.", "{hero} meeting a small friendly robot in a sunny park"),
@@ -196,12 +196,12 @@ THEME_TEMPLATES = {
     ],
     "overcoming a fear": [
         [   # arc A: scared of thunder
-            ("{hero} hid under the blankets every time it thundered.", "{hero} buried under a pile of blankets during a storm"),
-            ("Grandpa sat beside {hero} and told a secret.", "{hero} peeking out from the blankets while grandpa smiles"),
-            ("'Thunder is just clouds bumping into each other,' grandpa said.", "{hero} listening with wide eyes to grandpa's story"),
-            ("{hero} imagined grumpy clouds saying sorry to each other.", "{hero} imagining funny fluffy clouds arguing in the sky"),
-            ("The next crash came — and {hero} laughed instead of hiding!", "{hero} laughing boldly at the window during the storm"),
-            ("{hero} learned that knowing why things happen makes them less scary.", "{hero} and grandpa watching lightning together, smiling"),
+            ("Every time thunder rumbled, {hero} dove under the blankets and held on very tight. The sound was so big and so sudden — it seemed to fill the whole world. {hero} had tried to be brave, but the thunder was always louder than the bravery.", "{hero} burrowed completely under a pile of colourful blankets while a storm rages outside"),
+            ("One stormy afternoon, Grandpa came and sat quietly beside {hero}'s blanket fort. He didn't say 'don't be scared' or 'it's nothing.' He just sat there, calm and warm, until {hero} peeked out. 'Want to know a secret?' he whispered.", "{hero} peeking out from under the blankets to see Grandpa sitting calmly and smiling"),
+            ("'Thunder,' said Grandpa softly, 'is just two big clouds bumping into each other by accident — and then saying sorry very loudly.' {hero} blinked. That was not what {hero} had expected thunder to be. A tiny smile appeared.", "{hero} listening with wide eyes to Grandpa's explanation, a small surprised smile on their face"),
+            ("{hero} closed both eyes and tried to imagine it — two enormous fluffy clouds bonking heads and making embarrassed faces. A giggle escaped before {hero} could stop it. The next rumble came and for the first time, it sounded almost funny.", "{hero} grinning with eyes closed, imagining two cartoon clouds bumping together and looking sheepish"),
+            ("BOOM! The biggest thunder of the night shook the windows — and {hero} burst out laughing. Grandpa laughed too, and together they ran to the window to watch the lightning put on its show. The storm looked completely different now.", "{hero} and Grandpa laughing at the window together as dramatic lightning flashes outside in the dark"),
+            ("When the storm finally passed, {hero} and Grandpa stepped outside and breathed in the clean, rain-washed air. {hero} had learned something that night that no book could teach — understanding a thing is the first step to not being afraid of it. {hero} looked up at the clearing sky and felt proud.", "{hero} and Grandpa standing outside after the storm, looking up at a clearing sky with smiles"),
         ],
         [   # arc B: the deep swimming pool
             ("{hero} loved watching others swim but wouldn't go past the steps.", "{hero} sitting on the pool steps, looking at the water"),
@@ -222,12 +222,12 @@ THEME_TEMPLATES = {
     ],
     "helping someone": [
         [   # arc A: the broken toy shop
-            ("{hero} passed the old toy shop and saw the owner crying.", "{hero} stopping to look at a sad old toy-maker"),
-            ("A shelf had fallen and smashed twenty toys on the floor.", "{hero} seeing broken toys scattered across the floor"),
-            ("{hero} rolled up their sleeves without being asked.", "{hero} picking up toy pieces with determined eyes"),
-            ("Piece by piece, {hero} and the owner fixed each one.", "{hero} and the toy-maker gluing pieces together carefully"),
-            ("The last toy fixed was a little wooden bird that sang.", "{hero} and the owner listening to the bird sing again"),
-            ("{hero} learned that helping turns someone's worst day around.", "{hero} and the toy-maker shaking hands and smiling"),
+            ("{hero} was walking past the old toy shop when the sound of quiet crying stopped them in their tracks. Through the window, {hero} could see the toy-maker sitting on the floor with her head in her hands. A long wooden shelf had fallen and scattered twenty carefully painted toys across the floorboards.", "{hero} stopping outside the toy shop window, seeing the sad toy-maker among broken toys"),
+            ("The toy-maker looked up at {hero} with red eyes. 'Years of work,' she said softly, 'all broken in a moment.' {hero} looked at the jumble of wings, wheels, and tiny painted faces. Without being asked, {hero} stepped inside and knelt down.", "{hero} kneeling on the toy-shop floor, gently picking up pieces of broken toys"),
+            ("{hero} sorted the pieces carefully — wings in one pile, wheels in another, tiny hats and buttons in a third. The toy-maker watched for a moment, then picked up the glue and sat down beside {hero}. They didn't need to say anything. They just began.", "{hero} and the toy-maker sitting together on the shop floor, sorting toy pieces into careful groups"),
+            ("Piece by careful piece, the toys came back together. {hero} held the pieces steady while the toy-maker's practiced hands glued and pressed. Some were wonky; some had chips missing. But each one was whole again, and that was what mattered.", "{hero} and the toy-maker carefully gluing a toy together, their hands working side by side"),
+            ("The very last toy was a small wooden bird with a key in its back. The toy-maker wound it gently, set it on the counter, and they both held their breath. Then — the most perfect little song rang through the quiet shop. {hero} felt the hairs on their arms stand up.", "{hero} and the toy-maker listening with soft smiles as a small wooden bird on the counter plays its song"),
+            ("{hero} and the toy-maker stood at the door as the afternoon light turned golden. 'You didn't have to stop,' said the toy-maker quietly. 'I know,' said {hero}. {hero} had learned that helping someone on their worst day costs nothing — but can change everything.", "{hero} and the toy-maker standing at the sunny shop door, shaking hands warmly with smiles"),
         ],
         [   # arc B: the garden in winter
             ("{hero} noticed old Mrs. Patel's garden was bare and sad.", "{hero} looking over a fence at a grey winter garden"),
@@ -248,12 +248,12 @@ THEME_TEMPLATES = {
     ],
     "lost and found": [
         [   # arc A: the missing story book
-            ("{hero}'s favourite storybook had vanished — gone without a trace!", "{hero} searching through a pile of scattered books"),
-            ("It wasn't under the bed, in the kitchen, or the garden shed.", "{hero} checking more places, hands on hips"),
-            ("{hero} retraced every step from the whole day.", "{hero} thinking hard with a finger on chin, eyes closed"),
-            ("At the library — someone had borrowed it by mistake!", "{hero} spotting the book on a shelf at the library"),
-            ("{hero} found the reader and they shared it together instead.", "{hero} and a new friend reading the book side by side"),
-            ("{hero} learned that some things are even better when shared.", "{hero} and the new friend high-fiving over the open book"),
+            ("{hero}'s most treasured storybook had vanished — completely, utterly gone. {hero} checked under the bed, behind the sofa cushions, and inside every drawer twice. The whole morning felt grey without it.", "{hero} searching through a pile of scattered books with a worried, determined expression"),
+            ("It wasn't in the kitchen, the garden shed, or the coat-pocket where lost things often hid. {hero} stood in the middle of the room with hands on hips, thinking hard. 'Where,' said {hero} very firmly, 'did you go?'", "{hero} standing hands-on-hips in the middle of the room, looking puzzled"),
+            ("{hero} closed both eyes and retraced every single step of the day before. Morning — the bench by the door. Then the walk. Then... the library. {hero}'s eyes flew open. The library!", "{hero} eyes suddenly wide with an idea, finger pointing up"),
+            ("Sure enough, there it was — sitting on a library shelf between two books that didn't belong to it. But it wasn't alone. A child was holding it carefully, almost at the last page. {hero} stopped and watched.", "{hero} spotting the beloved book on a library shelf, a child sitting nearby reading it"),
+            ("{hero} waited until the child finished the last page, and the child's face went soft and quiet the way it does at the end of a perfect story. {hero} smiled and sat down beside the child. 'That's my favourite book,' {hero} said. 'I know all the best bits by heart.' And they read it again, together.", "{hero} and a new friend sitting side-by-side at the library, reading the book together"),
+            ("{hero} walked home with the book tucked under one arm and a warm feeling tucked inside their chest. Some things are better when they're shared — stories most of all. {hero} had lost a book and found a friend, which was a much better trade.", "{hero} walking home smiling with the book under their arm, waving goodbye to the new friend"),
         ],
         [   # arc B: the lost recipe
             ("Granny had lost her secret recipe for the best cookies ever.", "{hero} watching granny search through messy recipe cards"),
@@ -274,12 +274,12 @@ THEME_TEMPLATES = {
     ],
     "learning something new": [
         [   # arc A: first time on a bicycle
-            ("{hero} wanted to ride a bicycle but kept falling off.", "{hero} lying on the grass next to a toppled bicycle"),
-            ("Every try ended with a scraped knee and wobbly legs.", "{hero} wobbling badly on the bike, face determined"),
-            ("Papa said, 'Look where you want to go, not at the ground.'", "{hero} listening carefully to papa who points ahead"),
-            ("{hero} fixed their eyes on the garden gate and pedalled.", "{hero} cycling straight and steady for the first time"),
-            ("Zoom! The bicycle went all the way to the gate!", "{hero} shooting past the gate with arms raised in joy"),
-            ("{hero} learned that looking forward helps you move forward.", "{hero} cycling confidently down a sunny lane"),
+            ("{hero} had wanted to ride the bicycle since the very first day of summer. But every single time, the wheels wobbled and {hero} tumbled sideways onto the grass. By the fourth fall, {hero}'s knees were scraped and the bicycle looked very pleased with itself.", "{hero} sitting on the grass beside the fallen bicycle, looking frustrated but determined"),
+            ("Every try ended the same way — a moment of hope, then a wobble, then the ground. {hero} sat up, brushed off the mud, and stared at the bicycle. The bicycle, {hero} decided, was not winning today.", "{hero} wobbling dramatically on the bicycle, trying hard not to fall"),
+            ("Papa crouched beside {hero} and said something that didn't make sense at first. 'Don't look at the ground. Look at where you want to go.' {hero} frowned at the gate at the end of the path. It felt very far away. But {hero} nodded.", "{hero} listening carefully as Papa points towards the garden gate ahead"),
+            ("{hero} climbed back on, fixed both eyes on the gate, and pedalled. The wheels still wobbled — but just a little. {hero} kept looking forward. The wobble got smaller. The gate got closer.", "{hero} cycling carefully with eyes fixed ahead, wheels wobbling less and less"),
+            ("Zoom! {hero} shot past the gate with a shout that startled every bird in the garden. The bicycle was going fast and straight and perfectly. {hero} had done it — had actually, genuinely, completely done it.", "{hero} flying past the garden gate on the bicycle, arms raised in triumph"),
+            ("{hero} rode up and down the lane until the sun went low. That evening, {hero} understood something new: looking forward isn't just how you ride a bicycle. It's how you do almost everything hard. {hero} couldn't wait to see what else was possible.", "{hero} cycling confidently down a golden sunny lane, a huge proud smile on their face"),
         ],
         [   # arc B: cooking for the first time
             ("{hero} decided to make soup all by themselves.", "{hero} standing on a step stool by the big kitchen pot"),
@@ -306,8 +306,10 @@ Write a 6-page children's storybook for age 5 about Finn the red fox with theme:
 Rules:
 - Finn must appear by name in EVERY page text.
 - No new characters introduced after page 3.
-- Each page is 1–2 sentences, simple and vivid.
-- Page 6 ends with a clear lesson Finn has learned.
+- Each page is 2–3 sentences — vivid, warm, and emotionally engaging.
+- Use sensory details: colours, sounds, textures, and feelings.
+- Pages 1–2 introduce the character and problem. Pages 3–4 build the challenge. Pages 5–6 resolve and teach.
+- Page 6 ends with a warm lesson Finn has learned and a feeling of pride.
 - The scene describes only what can be drawn in one illustration.
 - Return ONLY valid JSON (no extra text).
 
@@ -315,12 +317,12 @@ Rules:
   "title": "Finn and the Thunderstorm",
   "character_description": "A small red fox named Finn with big amber eyes, white-tipped ears, and a fluffy striped tail",
   "pages": [
-    {"page": 1, "text": "Finn the red fox loved sunny days, but hid under the sofa whenever thunder rumbled.", "scene": "Finn the red fox curled up under a blue sofa, looking scared"},
-    {"page": 2, "text": "One afternoon, a storm rolled in and Finn could hear thunder booming outside.", "scene": "Finn the red fox peering nervously through a rain-streaked window"},
-    {"page": 3, "text": "Grandma Fox sat beside Finn and whispered a secret.", "scene": "Grandma Fox sitting calmly next to Finn the red fox on a warm rug"},
-    {"page": 4, "text": "'Thunder is just clouds bumping together and saying sorry,' she told Finn.", "scene": "Finn the red fox imagining two fluffy cartoon clouds bumping and giggling"},
-    {"page": 5, "text": "The next rumble came — and Finn laughed instead of hiding!", "scene": "Finn the red fox laughing at the window while rain pours outside"},
-    {"page": 6, "text": "Finn learned that understanding why things happen makes them far less scary.", "scene": "Finn the red fox and Grandma Fox watching the storm together from a cozy armchair"}
+    {"page": 1, "text": "Finn the red fox loved sunny mornings more than anything in the world, but the very first rumble of thunder made Finn's whole body tremble. Whenever dark clouds rolled in, Finn would crawl under the sofa and squeeze both eyes tightly shut. Finn wanted to be brave — but brave seemed like something meant for bigger foxes.", "scene": "Finn the red fox curled tightly under a blue sofa, eyes shut, while dark storm clouds fill the window behind the curtains"},
+    {"page": 2, "text": "One stormy afternoon, thunder shook the whole cottage and rattled the teacups on the shelf. Finn buried deep under the blankets, heart going thump-thump-thump. Grandma Fox came quietly and sat on the edge of the bed without saying a word.", "scene": "Finn the red fox burrowed under a patchwork blanket on a bed, Grandma Fox sitting calmly beside in warm lamplight"},
+    {"page": 3, "text": "Grandma Fox leaned in close and whispered a secret into Finn's ear. 'Thunder is just two clouds bumping into each other and saying sorry,' she said softly. Finn's ears perked up, and one eye opened just a little.", "scene": "Grandma Fox leaning close to whisper to Finn the red fox peeking out from under the blanket"},
+    {"page": 4, "text": "Finn closed both eyes again and tried very hard to imagine it — two big fluffy clouds bumping heads and making an oops face. A tiny giggle bubbled up before Finn could stop it. The next rumble came, and this time it sounded almost funny instead of frightening.", "scene": "Finn the red fox grinning with closed eyes, imagining two round cartoon clouds bumping together with surprised faces"},
+    {"page": 5, "text": "The next crack of thunder boomed across the sky — and Finn laughed out loud. Grandma Fox laughed too, and together they ran to the window to watch the lightning flash and dance. The storm looked completely different now, like a wild and wonderful show put on just for them.", "scene": "Finn the red fox and Grandma Fox laughing at a rain-streaked window as bright lightning flashes outside in the dark sky"},
+    {"page": 6, "text": "When the storm finally passed, Finn stood in the doorway and breathed in the clean, rain-washed air. Grandma Fox held Finn's paw quietly — some lessons don't need extra words. Finn had learned that understanding why something happens is the very first step to not being afraid of it anymore.", "scene": "Finn the red fox and Grandma Fox standing in the open doorway watching a golden rainbow stretch across the sky after the storm"}
   ]
 }
 """
@@ -332,10 +334,12 @@ def build_story_prompt(hero_name: str, theme: str, age: int) -> str:
 Write a 6-page children's storybook for age {age} about {hero_name} with theme: {theme}.
 
 Rules:
-- {hero_name} must appear by name in EVERY page text.
+- {hero_name} must appear by name in EVERY page text. Every single page.
 - Keep all characters consistent — do NOT introduce random new characters mid-story.
-- Each page is 1–2 short, vivid sentences a {age}-year-old can understand.
-- Page 6 ends with a gentle lesson {hero_name} has learned.
+- Each page: 2–3 vivid, emotionally warm sentences a {age}-year-old can follow and feel.
+- Use sensory details — colours, sounds, textures, emotions — to bring each moment alive.
+- Pages 1–2 introduce {hero_name} and the problem. Pages 3–4 build the challenge. Pages 5–6 resolve it and teach.
+- Page 6 ends with a clear, warm lesson {hero_name} has learned and a feeling of pride or joy.
 - Scene describes exactly what would appear in ONE illustration.
 - Return ONLY valid JSON (no explanation, no markdown fences):
 """
@@ -484,7 +488,7 @@ def load_sample_book() -> str:
 # ZEROGPU INFERENCE FUNCTIONS
 # ============================================================================
 
-@spaces.GPU(duration=60)
+@spaces.GPU(duration=90)
 def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
     """Generate a story on ZeroGPU, falling back to a deterministic local story."""
     try:
@@ -500,7 +504,7 @@ def generate_story_gpu(hero_name: str, theme: str, age: int = 5) -> dict:
         with torch.no_grad():
             out = model.generate(
                 **inputs,
-                max_new_tokens=GENERATION_PARAMS.max_story_tokens,
+                max_new_tokens=1200,
                 do_sample=True,
                 temperature=0.85,
                 top_p=0.92,
@@ -1039,9 +1043,10 @@ Write a 6-page children's bedtime story for age 5 about Mia the bunny. Genre: Fo
 
 Rules:
 - Mia must appear by name in EVERY page text.
-- Use calm, soft language — words slow down and the child feels sleepy.
-- Each page is 1–2 short, gentle sentences.
-- Page 6 ends with Mia (or the child) falling peacefully asleep.
+- Use calm, slow, sleepy language — gentle sentences that feel like a lullaby.
+- Each page is 2–3 soft, unhurried sentences. No excitement; only warmth and peace.
+- Use soothing sensory details: soft moonlight, warm moss, quiet sounds, slow breathing.
+- Page 6 ends with Mia (or the child) drifting peacefully to sleep.
 - Scene describes exactly what appears in one illustration.
 - Return ONLY valid JSON (no markdown fences, no extra text).
 
@@ -1049,12 +1054,12 @@ Rules:
   "title": "Mia and the Owl's Lullaby",
   "character_description": "A tiny white bunny named Mia with long soft ears, a pink nose, and a star-shaped patch on her back",
   "pages": [
-    {"page": 1, "text": "Mia the bunny hopped into the forest as the moon rose above the trees.", "scene": "Mia the white bunny stepping onto a silver moonlit forest path"},
-    {"page": 2, "text": "Everything was very quiet — the whole forest seemed to be waiting.", "scene": "Mia the white bunny standing still, ears up, listening"},
-    {"page": 3, "text": "Then Mia heard a soft sound from high in the oak — an old owl humming.", "scene": "Mia the white bunny looking up at a sleepy owl on a branch"},
-    {"page": 4, "text": "The owl's song was low and slow, like warm honey flowing.", "scene": "The owl humming softly, eyes half-closed, as Mia listens below"},
-    {"page": 5, "text": "Mia's eyelids grew heavy, and she lay down on a bed of moss.", "scene": "Mia the white bunny curling up on soft green moss"},
-    {"page": 6, "text": "The owl sang on, and Mia drifted into the sweetest dream.", "scene": "Mia the white bunny fast asleep in the moonlit forest, peaceful"}
+    {"page": 1, "text": "As the sun dipped below the trees, Mia the bunny padded softly into the forest where everything was turning gold and purple. The air smelled of pine needles and cool evening dew. Mia's little paws made no sound at all on the mossy path.", "scene": "Mia the white bunny walking gently along a golden-purple evening forest path covered in soft moss"},
+    {"page": 2, "text": "The forest grew very still, as if the whole world was taking a long, slow breath. Even the leaves stopped rustling, and the stream became barely a whisper. Mia sat down and listened to the quiet.", "scene": "Mia the white bunny sitting very still on a mossy log, eyes half-closed, surrounded by a calm twilight forest"},
+    {"page": 3, "text": "Then, from somewhere high in the old oak tree, Mia heard the softest sound — an owl, humming a gentle tune. The notes floated down through the branches like feathers. Mia tilted her ears upward and smiled.", "scene": "Mia the white bunny looking up at a sleepy owl perched on a moonlit oak branch above"},
+    {"page": 4, "text": "The owl's song was slow and low, like warm honey poured into a cup. With every note, Mia felt her shoulders soften and her eyes grow heavier. The whole forest seemed to hum along.", "scene": "The old owl humming with eyes half-shut, Mia the bunny below resting her cheek on her paws listening"},
+    {"page": 5, "text": "Mia found a bed of the softest green moss she had ever touched, and curled herself into a tiny ball. Her breathing slowed, and the owl's song wrapped around her like a blanket. Everything felt very safe and very warm.", "scene": "Mia the white bunny curled in a tiny ball on thick green moss, eyes almost closed, moonlight filtering through the trees"},
+    {"page": 6, "text": "The owl sang on and on, and Mia drifted into the most peaceful dream. Her pink nose twitched once, then was still. Somewhere above, a single star blinked goodnight.", "scene": "Mia the white bunny fast asleep on moonlit moss, a single star glowing above the peaceful forest"}
   ]
 }
 """
@@ -1088,7 +1093,7 @@ def build_bedtime_html(title: str, pages: list) -> str:
     )
 
 
-@spaces.GPU(duration=60)
+@spaces.GPU(duration=90)
 def generate_bedtime_story_gpu(hero_name: str, genre: str, mood: str) -> dict:
     """Generate a gentle bedtime story with MiniCPM5-1B."""
     try:
@@ -1099,9 +1104,10 @@ def generate_bedtime_story_gpu(hero_name: str, genre: str, mood: str) -> dict:
             f"Genre: {genre}. Mood: {mood}.\n\n"
             f"Rules:\n"
             f"- {hero_name} must appear by name in EVERY page text.\n"
-            f"- Use calm, slow, sleepy language throughout.\n"
-            f"- Each page: 1–2 gentle sentences only.\n"
-            f"- Page 6 must end with {hero_name} or the child falling peacefully asleep.\n"
+            f"- Use calm, slow, sleepy language — each page should feel like a lullaby.\n"
+            f"- Each page: 2–3 soft, unhurried sentences. No excitement; only warmth and peace.\n"
+            f"- Include gentle sensory details: soft moonlight, quiet sounds, warm textures.\n"
+            f"- Page 6 must end with {hero_name} or the child drifting peacefully asleep.\n"
             f"- Do NOT introduce random unrelated characters.\n"
             f"- Return ONLY valid JSON:\n"
         )
@@ -1114,7 +1120,7 @@ def generate_bedtime_story_gpu(hero_name: str, genre: str, mood: str) -> dict:
         ).to("cuda")
         with torch.no_grad():
             out = model.generate(
-                **inputs, max_new_tokens=800,
+                **inputs, max_new_tokens=1200,
                 do_sample=True, temperature=0.85, top_p=0.92, repetition_penalty=1.1,
             )
         response = tok.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
